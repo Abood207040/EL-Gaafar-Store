@@ -2,18 +2,34 @@
 import { useState } from 'react';
 import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
+import { createAdminProduct, updateAdminProduct } from '../../services/productsService.js';
 
-export default function AdminProductFormPage({ navigate }) {
+export default function AdminProductFormPage({ navigate, product }) {
   const { t } = useLocalization();
   const { categories, brands, addCategory, addBrand } = useCatalogOptions();
-  const [active, setActive] = useState(true);
-  const [featured, setFeatured] = useState(false);
+  const isEditMode = Boolean(product?.id);
+  const [active, setActive] = useState(product?.active !== false);
+  const [featured, setFeatured] = useState(Boolean(product?.featured));
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newBrand, setNewBrand] = useState('');
   const [form, setForm] = useState({
-    nameEn: '', nameAr: '', descEn: '', descAr: '',
-    category: '', brand: '', price: '', stock: '', sku: '',
-    size: '', material: '', usage: '', color: '', pressureRating: '', warranty: '',
+    nameEn: product?.nameEn || '',
+    nameAr: product?.nameAr || '',
+    descEn: product?.description || '',
+    descAr: '',
+    category: product?.category || '',
+    brand: product?.brand || '',
+    price: product?.price ?? '',
+    stock: product?.stock ?? '',
+    sku: product?.sku || '',
+    size: product?.specs?.size || '',
+    material: product?.specs?.material || '',
+    usage: product?.specs?.usage || '',
+    color: product?.specs?.color || '',
+    pressureRating: product?.specs?.pressureRating || '',
+    warranty: product?.specs?.warranty || '',
   });
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
@@ -35,6 +51,48 @@ export default function AdminProductFormPage({ navigate }) {
     if (addBrand(newBrand)) {
       setForm(f => ({ ...f, brand: newBrand.trim().replace(/\s+/g, ' ') }));
       setNewBrand('');
+    }
+  };
+
+  const handleSave = async () => {
+    setSaveError('');
+    if (!form.nameEn.trim() || !form.nameAr.trim() || !form.category || !form.brand) {
+      setSaveError(t('fillRequiredFields'));
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      nameEn: form.nameEn.trim(),
+      nameAr: form.nameAr.trim(),
+      category: form.category,
+      brand: form.brand,
+      price: form.price,
+      stock: form.stock,
+      sku: form.sku.trim(),
+      description: form.descEn.trim() || form.descAr.trim(),
+      specs: {
+        size: form.size.trim(),
+        material: form.material.trim(),
+        usage: form.usage.trim(),
+        color: form.color.trim(),
+        pressureRating: form.pressureRating.trim(),
+        warranty: form.warranty.trim(),
+      },
+      featured,
+      active,
+    };
+
+    try {
+      if (isEditMode) {
+        await updateAdminProduct(product.id, payload);
+      } else {
+        await createAdminProduct(payload);
+      }
+      navigate('admin-products');
+    } catch (error) {
+      setSaveError(error.message || t('saveProductFailed'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -260,11 +318,15 @@ export default function AdminProductFormPage({ navigate }) {
           {/* Actions */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {saveError ? (
+                <p style={{ color: 'var(--danger)', fontSize: '0.8125rem' }}>{saveError}</p>
+              ) : null}
               <button
                 className="btn btn-primary w-full"
-                onClick={() => navigate('admin-products')}
+                onClick={handleSave}
+                disabled={saving}
               >
-                {t('saveProduct')}
+                {saving ? t('saving') : (isEditMode ? t('updateProduct') : t('saveProduct'))}
               </button>
               <button
                 className="btn btn-outline w-full"

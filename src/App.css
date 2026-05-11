@@ -776,6 +776,19 @@ html[dir="rtl"] .alert-chip.low {
 .success-msg { color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6; }
 .success-actions { display: flex; flex-direction: column; gap: 1rem; }
 
+/* --- Admin Auth --- */
+.admin-auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  background: linear-gradient(180deg, #F8FAFB 0%, var(--bg) 100%);
+}
+.admin-auth-card {
+  width: min(100%, 460px);
+  margin: 0 auto;
+}
+
 @media (max-width: 992px) {
   .admin-layout { flex-direction: column; }
   .admin-sidebar {

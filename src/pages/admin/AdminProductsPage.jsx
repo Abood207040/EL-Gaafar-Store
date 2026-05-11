@@ -1,19 +1,60 @@
 // src/pages/admin/AdminProductsPage.jsx
-import { useState } from 'react';
-import { products } from '../../data/products.js';
+import { useEffect, useState } from 'react';
 import { StockBadge } from '../../components/ui/StatusBadge.jsx';
 import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
+import { deleteAdminProduct, listAdminProducts } from '../../services/productsService.js';
+import { products as fallbackProducts } from '../../data/products.js';
 
 export default function AdminProductsPage({ navigate }) {
   const { categories } = useCatalogOptions();
   const { t, translateCategory, productName, productAltName } = useLocalization();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [categoryTab, setCategoryTab] = useState('All');
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
 
-  const filtered = products.filter(p => {
+  useEffect(() => {
+    let ignore = false;
+
+    const loadProducts = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await listAdminProducts();
+        if (!ignore) setItems(data);
+      } catch (fetchError) {
+        if (!ignore) {
+          setItems(fallbackProducts);
+          setError(fetchError.message || t('productsLoadFailed'));
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadProducts();
+    return () => {
+      ignore = true;
+    };
+  }, [t]);
+
+  const handleDelete = async (product) => {
+    const confirmed = window.confirm(t('confirmDeleteProduct', productName(product)));
+    if (!confirmed) return;
+
+    try {
+      await deleteAdminProduct(product.id);
+      setItems((prev) => prev.filter((item) => item.id !== product.id));
+    } catch (deleteError) {
+      window.alert(deleteError.message || t('deleteProductFailed'));
+    }
+  };
+
+  const filtered = items.filter(p => {
     const q = search.toLowerCase();
     const matchSearch = !q ||
       p.nameEn.toLowerCase().includes(q) ||
@@ -56,6 +97,12 @@ export default function AdminProductsPage({ navigate }) {
         </div>
       </div>
 
+      {error ? (
+        <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+          {error}
+        </p>
+      ) : null}
+
       {/* Category Tabs */}
       <div className="admin-tabs" role="tablist" aria-label={t('category')}>
         {categories.map(cat => (
@@ -88,7 +135,13 @@ export default function AdminProductsPage({ navigate }) {
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                    {t('loadingProducts')}
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('noProductsFound')}
@@ -121,12 +174,16 @@ export default function AdminProductsPage({ navigate }) {
                         <button
                           className="btn btn-outline btn-sm"
                           aria-label={`${t('edit')} ${productName(p)}`}
-                          onClick={() => navigate('admin-product-form')}
+                          onClick={() => navigate('admin-product-form', { product: p })}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           {t('edit')}
                         </button>
-                        <button className="btn btn-danger btn-sm" aria-label={`${t('delete')} ${productName(p)}`}>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          aria-label={`${t('delete')} ${productName(p)}`}
+                          onClick={() => handleDelete(p)}
+                        >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                         </button>
                       </div>

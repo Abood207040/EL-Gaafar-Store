@@ -25,20 +25,37 @@ import AdminCatalogPage from './pages/admin/AdminCatalogPage.jsx';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage.jsx';
 import AdminInventoryPage from './pages/admin/AdminInventoryPage.jsx';
 import AdminCustomersPage from './pages/admin/AdminCustomersPage.jsx';
+import AdminLoginPage from './pages/admin/AdminLoginPage.jsx';
+import AdminAccessDeniedPage from './pages/admin/AdminAccessDeniedPage.jsx';
+import { useAuth } from './hooks/useAuth.jsx';
+import { useLocalization } from './i18n/Localization.jsx';
 
 const ADMIN_PAGES = new Set([
   'admin-dashboard', 'admin-products', 'admin-product-form',
   'admin-catalog', 'admin-orders', 'admin-inventory', 'admin-customers',
 ]);
+const PUBLIC_PAGES = new Set([
+  'shop',
+  'product-details',
+  'cart',
+  'checkout',
+  'order-success',
+  'my-orders',
+  'order-details',
+  'admin-login',
+]);
+const ALL_PAGES = new Set([...ADMIN_PAGES, ...PUBLIC_PAGES]);
 
 function App() {
+  const { user, isAdmin, loading, adminMessage, authError } = useAuth();
+  const { t } = useLocalization();
   const [currentPage, setCurrentPage] = useState('shop');
   const [pageData, setPageData] = useState(null); // for product/order being viewed
   const [cart, setCart] = useState([]);
 
   // Navigate with optional data payload
   const navigate = (page, data = null) => {
-    setCurrentPage(page);
+    setCurrentPage(ALL_PAGES.has(page) ? page : 'shop');
     setPageData(data);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -72,10 +89,32 @@ function App() {
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  const isAdmin = ADMIN_PAGES.has(currentPage);
+  const isAdminPage = ADMIN_PAGES.has(currentPage);
 
   // Render admin pages inside AdminLayout
-  if (isAdmin) {
+  if (isAdminPage) {
+    if (loading) {
+      return (
+        <div className="admin-auth-page">
+          <div className="container-sm">
+            <div className="card">
+              <div className="card-body" style={{ textAlign: 'center', padding: '2rem' }}>
+                <p style={{ color: 'var(--muted)' }}>{t('loadingAdminAuth')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return <AdminLoginPage navigate={navigate} />;
+    }
+
+    if (!isAdmin) {
+      return <AdminAccessDeniedPage navigate={navigate} message={authError || adminMessage} />;
+    }
+
     let adminContent;
     switch (currentPage) {
       case 'admin-dashboard':
@@ -85,7 +124,7 @@ function App() {
         adminContent = <AdminProductsPage navigate={navigate} />;
         break;
       case 'admin-product-form':
-        adminContent = <AdminProductFormPage navigate={navigate} />;
+        adminContent = <AdminProductFormPage navigate={navigate} product={pageData?.product || null} />;
         break;
       case 'admin-catalog':
         adminContent = <AdminCatalogPage navigate={navigate} />;
@@ -112,6 +151,31 @@ function App() {
   // Public pages
   let pageContent;
   switch (currentPage) {
+    case 'admin-login':
+      if (loading) {
+        pageContent = (
+          <div className="admin-auth-page">
+            <div className="container-sm">
+              <div className="card">
+                <div className="card-body" style={{ textAlign: 'center', padding: '2rem' }}>
+                  <p style={{ color: 'var(--muted)' }}>{t('loadingAdminAuth')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      } else if (!user) {
+        pageContent = <AdminLoginPage navigate={navigate} />;
+      } else if (!isAdmin) {
+        pageContent = <AdminAccessDeniedPage navigate={navigate} message={authError || adminMessage} />;
+      } else {
+        pageContent = (
+          <AdminLayout currentPage="admin-dashboard" navigate={navigate}>
+            <AdminDashboardPage navigate={navigate} />
+          </AdminLayout>
+        );
+      }
+      break;
     case 'shop':
       pageContent = (
         <ShopPage

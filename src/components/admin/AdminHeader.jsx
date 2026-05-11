@@ -1,10 +1,20 @@
 // src/components/admin/AdminHeader.jsx
 import { useState } from 'react';
 import { useLocalization } from '../../i18n/Localization.jsx';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
-export default function AdminHeader({ title, subtitle }) {
+export default function AdminHeader({ title, subtitle, navigate }) {
   const { t } = useLocalization();
+  const { signOut } = useAuth();
   const [search, setSearch] = useState('');
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } finally {
+      navigate('admin-login');
+    }
+  };
 
   return (
     <header className="admin-header" role="banner">
@@ -32,6 +42,9 @@ export default function AdminHeader({ title, subtitle }) {
             <span className="admin-profile-name">{t('adminUser')}</span>
             <span className="admin-profile-role">{t('storeManager')}</span>
           </div>
+          <button type="button" className="btn btn-outline btn-sm" onClick={handleSignOut}>
+            {t('signOut')}
+          </button>
         </div>
       </div>
     </header>
