@@ -1,101 +1,280 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CATEGORIES as DEFAULT_CATEGORIES, BRANDS as DEFAULT_BRANDS } from '../data/products.js';
+import { supabase } from '../services/authService.js';
 
-const STORAGE_KEYS = {
-  categories: 'al-jafar-custom-categories',
-  brands: 'al-jafar-custom-brands',
-};
+const normalize = (value) => String(value || '').trim().replace(/\s+/g, ' ');
 
-const readStoredOptions = (key) => {
-  try {
-    const stored = window.localStorage.getItem(key);
-    const parsed = stored ? JSON.parse(stored) : [];
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch {
-    return [];
-  }
-};
+function slugify(value) {
+  return normalize(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
 
-const writeStoredOptions = (key, value) => {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // localStorage can be unavailable in restricted browser modes.
-  }
-};
-
-const normalize = (value) => value.trim().replace(/\s+/g, ' ');
-
-const mergeOptions = (defaults, custom) => {
+function dedupe(values) {
   const seen = new Set();
-  return [...defaults, ...custom].filter((item) => {
-    const key = item.toLowerCase();
+  return values.filter((value) => {
+    const key = String(value || '').toLowerCase();
+    if (!key) return false;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
-};
+}
 
-const addOption = (setter, defaults, value) => {
-  const next = normalize(value);
-  if (!next || next.toLowerCase() === 'all') return false;
+async function fetchFallbackBrandRowsFromProducts() {
+  const fallback = await supabase
+    .from('products')
+    .select('brand')
+    .order('brand', { ascending: true });
 
-  const existsInDefaults = defaults.some((item) => item.toLowerCase() === next.toLowerCase());
-  if (existsInDefaults) return false;
+  if (fallback.error) return [];
 
-  let added = false;
-  setter((prev) => {
-    const exists = prev.some((item) => item.toLowerCase() === next.toLowerCase());
-    if (exists) return prev;
-    added = true;
-    return [...prev, next];
-  });
-  return added;
-};
+  const names = dedupe(
+    (fallback.data || [])
+      .map((row) => normalize(row.brand))
+      .filter(Boolean)
+  );
+
+  return names.map((name, index) => ({
+    id: `fallback-brand-${index + 1}`,
+    name_en: name,
+    name_ar: '',
+    slug: slugify(name),
+    is_active: true,
+  }));
+}
+
+async function buildUniqueSlug(table, base) {
+  const safeBase = base || `item-${Date.now()}`;
+  const { data, error } = await supabase
+    .from(table)
+    .select('slug')
+    .like('slug', `${safeBase}%`);
+  if (error) throw error;
+
+  const taken = new Set((data || []).map((row) => String(row.slug || '').toLowerCase()));
+  if (!taken.has(safeBase.toLowerCase())) return safeBase;
+
+  let index = 2;
+  while (taken.has(`${safeBase}-${index}`.toLowerCase())) {
+    index += 1;
+  }
+  return `${safeBase}-${index}`;
+}
 
 export default function useCatalogOptions() {
-  const [customCategories, setCustomCategories] = useState(() => readStoredOptions(STORAGE_KEYS.categories));
-  const [customBrands, setCustomBrands] = useState(() => readStoredOptions(STORAGE_KEYS.brands));
+  const [categoryRows, setCategoryRows] = useState([]);
+  const [brandRows, setBrandRows] = useState([]);
+  const [categoriesTableAvailable, setCategoriesTableAvailable] = useState(true);
+  const [brandsTableAvailable, setBrandsTableAvailable] = useState(true);
+
+  const refreshCategories = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, name_en, name_ar, slug, is_active')
+      .eq('is_active', true)
+      .order('name_en', { ascending: true });
+    if (error) {
+      setCategoriesTableAvailable(false);
+      setCategoryRows([]);
+      return;
+    }
+    setCategoriesTableAvailable(true);
+    setCategoryRows(data || []);
+  }, []);
+
+  const refreshBrands = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('brands')
+      .select('id, name_en, name_ar, slug, is_active')
+      .eq('is_active', true)
+      .order('name_en', { ascending: true });
+    if (error) {
+      setBrandsTableAvailable(false);
+      const fallbackRows = await fetchFallbackBrandRowsFromProducts();
+      setBrandRows(fallbackRows);
+      return;
+    }
+    setBrandsTableAvailable(true);
+    const rows = data || [];
+    if (rows.length === 0) {
+      const fallbackRows = await fetchFallbackBrandRowsFromProducts();
+      setBrandRows(fallbackRows);
+      return;
+    }
+    setBrandRows(rows);
+  }, []);
 
   useEffect(() => {
-    writeStoredOptions(STORAGE_KEYS.categories, customCategories);
-  }, [customCategories]);
+    refreshCategories().catch(() => {});
+    refreshBrands().catch(() => {});
+  }, [refreshCategories, refreshBrands]);
 
-  useEffect(() => {
-    writeStoredOptions(STORAGE_KEYS.brands, customBrands);
-  }, [customBrands]);
+  const categories = useMemo(() => {
+    const names = categoryRows.map((row) => normalize(row.name_en || row.name_ar));
+    return ['All', ...dedupe(names)];
+  }, [categoryRows]);
 
-  const categories = useMemo(
-    () => mergeOptions(DEFAULT_CATEGORIES, customCategories),
-    [customCategories]
+  const brands = useMemo(() => {
+    const names = brandRows.map((row) => normalize(row.name_en || row.name_ar));
+    return ['All', ...dedupe(names)];
+  }, [brandRows]);
+
+  const customCategories = useMemo(
+    () => categories.filter((name) => name !== 'All'),
+    [categories]
   );
-  const brands = useMemo(
-    () => mergeOptions(DEFAULT_BRANDS, customBrands),
-    [customBrands]
+
+  const customBrands = useMemo(
+    () => brands.filter((name) => name !== 'All'),
+    [brands]
   );
+
+  const catalogWarnings = useMemo(() => {
+    const warnings = [];
+    if (!categoriesTableAvailable) {
+      warnings.push('Categories table is missing or inaccessible. Showing fallback list.');
+    }
+    if (!brandsTableAvailable) {
+      warnings.push('Brands table is missing or inaccessible. Showing fallback list.');
+    }
+    return warnings;
+  }, [brandsTableAvailable, categoriesTableAvailable]);
 
   const addCategory = useCallback(
-    (value) => addOption(setCustomCategories, DEFAULT_CATEGORIES, value),
-    []
+    async (value) => {
+      const nameEn = normalize(value?.nameEn);
+      const nameAr = normalize(value?.nameAr);
+
+      if (!categoriesTableAvailable) {
+        throw new Error('Categories table is missing or inaccessible in Supabase.');
+      }
+      if (!nameEn || !nameAr) {
+        throw new Error('Please enter both English and Arabic names.');
+      }
+      if (nameEn.toLowerCase() === 'all') return false;
+      if (categories.some((item) => item.toLowerCase() === nameEn.toLowerCase())) return false;
+
+      const existingArabic = categoryRows.some(
+        (item) => normalize(item.name_ar).toLowerCase() === nameAr.toLowerCase()
+      );
+      if (existingArabic) return false;
+
+      const baseSlug = slugify(nameEn);
+      const slug = await buildUniqueSlug('categories', baseSlug || 'category');
+
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name_en: nameEn,
+          name_ar: nameAr,
+          slug,
+          is_active: true,
+        });
+      if (error) throw error;
+
+      await refreshCategories();
+      return true;
+    },
+    [categories, categoryRows, categoriesTableAvailable, refreshCategories]
   );
+
+  const removeCategory = useCallback(
+    async (value) => {
+      const next = normalize(value);
+      if (!next) return;
+      if (!categoriesTableAvailable) {
+        throw new Error('Categories table is missing or inaccessible in Supabase.');
+      }
+
+      const row = categoryRows.find(
+        (item) => normalize(item.name_en).toLowerCase() === next.toLowerCase()
+      );
+      if (!row) return;
+
+      const { error } = await supabase
+        .from('categories')
+        .update({ is_active: false })
+        .eq('id', row.id);
+      if (error) throw error;
+
+      await refreshCategories();
+    },
+    [categoriesTableAvailable, categoryRows, refreshCategories]
+  );
+
   const addBrand = useCallback(
-    (value) => addOption(setCustomBrands, DEFAULT_BRANDS, value),
-    []
+    async (value) => {
+      const nameEn = normalize(value?.nameEn);
+      const nameAr = normalize(value?.nameAr);
+
+      if (!brandsTableAvailable) {
+        throw new Error('Brands table is missing or inaccessible in Supabase.');
+      }
+      if (!nameEn || !nameAr) {
+        throw new Error('Please enter both English and Arabic names.');
+      }
+      if (nameEn.toLowerCase() === 'all') return false;
+      if (brands.some((item) => item.toLowerCase() === nameEn.toLowerCase())) return false;
+
+      const existingArabic = brandRows.some(
+        (item) => normalize(item.name_ar).toLowerCase() === nameAr.toLowerCase()
+      );
+      if (existingArabic) return false;
+
+      const baseSlug = slugify(nameEn);
+      const slug = await buildUniqueSlug('brands', baseSlug || 'brand');
+
+      const { error } = await supabase
+        .from('brands')
+        .insert({
+          name_en: nameEn,
+          name_ar: nameAr,
+          slug,
+          is_active: true,
+        });
+      if (error) throw error;
+
+      await refreshBrands();
+      return true;
+    },
+    [brands, brandRows, brandsTableAvailable, refreshBrands]
   );
 
-  const removeCategory = useCallback((value) => {
-    setCustomCategories((prev) => prev.filter((item) => item !== value));
-  }, []);
+  const removeBrand = useCallback(
+    async (value) => {
+      const next = normalize(value);
+      if (!next) return;
+      if (!brandsTableAvailable) {
+        throw new Error('Brands table is missing or inaccessible in Supabase.');
+      }
 
-  const removeBrand = useCallback((value) => {
-    setCustomBrands((prev) => prev.filter((item) => item !== value));
-  }, []);
+      const row = brandRows.find(
+        (item) => normalize(item.name_en).toLowerCase() === next.toLowerCase()
+      );
+      if (!row) return;
+
+      const { error } = await supabase
+        .from('brands')
+        .update({ is_active: false })
+        .eq('id', row.id);
+      if (error) throw error;
+
+      await refreshBrands();
+    },
+    [brandRows, brandsTableAvailable, refreshBrands]
+  );
 
   return {
     categories,
     brands,
     customCategories,
     customBrands,
+    categoriesTableAvailable,
+    brandsTableAvailable,
+    catalogWarnings,
     addCategory,
     addBrand,
     removeCategory,

@@ -1,6 +1,6 @@
 // src/components/products/ProductCard.jsx
 import { StockBadge } from '../ui/StatusBadge.jsx';
-import { STOCK_STATUSES } from '../../data/products.js';
+import { STOCK_STATUSES } from '../../constants/domain.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function ProductCard({ product, onAddToCart, onViewDetails }) {
@@ -40,7 +40,7 @@ export default function ProductCard({ product, onAddToCart, onViewDetails }) {
 
         <div className="product-footer">
           <div className="product-price">
-            <span className="price-currency">SAR</span>
+            <span className="price-currency">EGP</span>
             <span className="price-amount">{product.price.toFixed(2)}</span>
           </div>
 

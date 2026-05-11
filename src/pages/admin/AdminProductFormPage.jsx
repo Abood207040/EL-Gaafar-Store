@@ -1,29 +1,69 @@
 // src/pages/admin/AdminProductFormPage.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
 import { createAdminProduct, updateAdminProduct } from '../../services/productsService.js';
+import { uploadProductImage } from '../../services/storageService.js';
+
+function mapUiFormToProductPayload(form, flags) {
+  return {
+    nameEn: form.nameEn.trim(),
+    nameAr: form.nameAr.trim(),
+    categoryId: form.categoryId || undefined,
+    category: form.category,
+    brand: form.brand,
+    price: form.price,
+    stock: form.stock,
+    sku: form.sku.trim(),
+    image: form.imageUrl.trim(),
+    imageUrl: form.imageUrl.trim(),
+    description: form.descEn.trim() || form.descAr.trim(),
+    descriptionEn: form.descEn.trim(),
+    descriptionAr: form.descAr.trim(),
+    specs: {
+      size: form.size.trim(),
+      material: form.material.trim(),
+      usage: form.usage.trim(),
+      color: form.color.trim(),
+      pressureRating: form.pressureRating.trim(),
+      warranty: form.warranty.trim(),
+    },
+    featured: Boolean(flags.featured),
+    active: flags.active !== false,
+  };
+}
 
 export default function AdminProductFormPage({ navigate, product }) {
   const { t } = useLocalization();
   const { categories, brands, addCategory, addBrand } = useCatalogOptions();
+
   const isEditMode = Boolean(product?.id);
   const [active, setActive] = useState(product?.active !== false);
   const [featured, setFeatured] = useState(Boolean(product?.featured));
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [newBrand, setNewBrand] = useState('');
+  const [imageUploadError, setImageUploadError] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+
+  const [newCategoryEn, setNewCategoryEn] = useState('');
+  const [newCategoryAr, setNewCategoryAr] = useState('');
+  const [newBrandEn, setNewBrandEn] = useState('');
+  const [newBrandAr, setNewBrandAr] = useState('');
+
   const [form, setForm] = useState({
     nameEn: product?.nameEn || '',
     nameAr: product?.nameAr || '',
-    descEn: product?.description || '',
-    descAr: '',
+    descEn: product?.descriptionEn || product?.description || '',
+    descAr: product?.descriptionAr || '',
     category: product?.category || '',
+    categoryId: product?.categoryId || '',
     brand: product?.brand || '',
     price: product?.price ?? '',
     stock: product?.stock ?? '',
     sku: product?.sku || '',
+    imageUrl: product?.image || '',
     size: product?.specs?.size || '',
     material: product?.specs?.material || '',
     usage: product?.specs?.usage || '',
@@ -32,57 +72,99 @@ export default function AdminProductFormPage({ navigate, product }) {
     warranty: product?.specs?.warranty || '',
   });
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
+  const set = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl('');
+      return undefined;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   const generateSKU = () => {
     const cat = form.category ? form.category.slice(0, 3).toUpperCase() : 'GEN';
     const rand = Math.floor(Math.random() * 900 + 100);
-    setForm(f => ({ ...f, sku: `AJ-${cat}-${rand}` }));
+    setForm((prev) => ({ ...prev, sku: `AJ-${cat}-${rand}` }));
   };
 
-  const addCategoryFromForm = () => {
-    if (addCategory(newCategory)) {
-      setForm(f => ({ ...f, category: newCategory.trim().replace(/\s+/g, ' ') }));
-      setNewCategory('');
+  const addCategoryFromForm = async () => {
+    setSaveError('');
+    try {
+      const added = await addCategory({
+        nameEn: newCategoryEn,
+        nameAr: newCategoryAr,
+      });
+      if (added) {
+        setForm((prev) => ({ ...prev, category: newCategoryEn.trim().replace(/\s+/g, ' ') }));
+        setNewCategoryEn('');
+        setNewCategoryAr('');
+      }
+    } catch (error) {
+      setSaveError(error.message || t('saveProductFailed'));
     }
   };
 
-  const addBrandFromForm = () => {
-    if (addBrand(newBrand)) {
-      setForm(f => ({ ...f, brand: newBrand.trim().replace(/\s+/g, ' ') }));
-      setNewBrand('');
+  const addBrandFromForm = async () => {
+    setSaveError('');
+    try {
+      const added = await addBrand({
+        nameEn: newBrandEn,
+        nameAr: newBrandAr,
+      });
+      if (added) {
+        setForm((prev) => ({ ...prev, brand: newBrandEn.trim().replace(/\s+/g, ' ') }));
+        setNewBrandEn('');
+        setNewBrandAr('');
+      }
+    } catch (error) {
+      setSaveError(error.message || t('saveProductFailed'));
     }
+  };
+
+  const onFileChange = (event) => {
+    const nextFile = event.target.files?.[0] || null;
+    setImageUploadError('');
+    setSaveError('');
+    setImageFile(nextFile);
   };
 
   const handleSave = async () => {
     setSaveError('');
+    setImageUploadError('');
+
     if (!form.nameEn.trim() || !form.nameAr.trim() || !form.category || !form.brand) {
       setSaveError(t('fillRequiredFields'));
       return;
     }
-    setSaving(true);
-    const payload = {
-      nameEn: form.nameEn.trim(),
-      nameAr: form.nameAr.trim(),
-      category: form.category,
-      brand: form.brand,
-      price: form.price,
-      stock: form.stock,
-      sku: form.sku.trim(),
-      description: form.descEn.trim() || form.descAr.trim(),
-      specs: {
-        size: form.size.trim(),
-        material: form.material.trim(),
-        usage: form.usage.trim(),
-        color: form.color.trim(),
-        pressureRating: form.pressureRating.trim(),
-        warranty: form.warranty.trim(),
-      },
-      featured,
-      active,
-    };
 
+    setSaving(true);
+    let uploadedInThisAttempt = false;
     try {
+      let nextImageUrl = form.imageUrl;
+
+      if (imageFile) {
+        setUploadingImage(true);
+        try {
+          nextImageUrl = await uploadProductImage(imageFile);
+          uploadedInThisAttempt = true;
+          setForm((prev) => ({ ...prev, imageUrl: nextImageUrl }));
+        } catch (uploadError) {
+          setImageUploadError(uploadError.message || 'Image upload failed.');
+          setSaveError(uploadError.message || 'Image upload failed.');
+          return;
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
+      const payload = mapUiFormToProductPayload(
+        { ...form, imageUrl: nextImageUrl },
+        { featured, active }
+      );
+
       if (isEditMode) {
         await updateAdminProduct(product.id, payload);
       } else {
@@ -90,18 +172,23 @@ export default function AdminProductFormPage({ navigate, product }) {
       }
       navigate('admin-products');
     } catch (error) {
-      setSaveError(error.message || t('saveProductFailed'));
+      if (uploadedInThisAttempt) {
+        setSaveError(`Image uploaded, but product save failed: ${error.message || t('saveProductFailed')}`);
+      } else {
+        setSaveError(error.message || t('saveProductFailed'));
+      }
     } finally {
       setSaving(false);
+      setUploadingImage(false);
     }
   };
+
+  const previewSrc = imagePreviewUrl || form.imageUrl || '';
 
   return (
     <div className="admin-page animate-fadeIn">
       <div className="admin-form-layout">
-        {/* Main Form */}
         <div className="admin-form-main">
-          {/* Basic Info */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('productInformation')}</h2>
@@ -110,7 +197,7 @@ export default function AdminProductFormPage({ navigate, product }) {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="name-en" className="form-label">{t('productNameEnglish')} <span aria-hidden="true">*</span></label>
-                  <input id="name-en" className="input" placeholder="e.g. Brass Ball Valve 3/4&quot;" value={form.nameEn} onChange={set('nameEn')} required />
+                  <input id="name-en" className="input" placeholder='e.g. Brass Ball Valve 3/4"' value={form.nameEn} onChange={set('nameEn')} required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="name-ar" className="form-label">{t('productNameArabic')} <span aria-hidden="true">*</span></label>
@@ -128,7 +215,6 @@ export default function AdminProductFormPage({ navigate, product }) {
             </div>
           </div>
 
-          {/* Classification */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('classification')}</h2>
@@ -142,47 +228,34 @@ export default function AdminProductFormPage({ navigate, product }) {
                   <label htmlFor="category" className="form-label">{t('category')} <span aria-hidden="true">*</span></label>
                   <select id="category" className="select" value={form.category} onChange={set('category')} required>
                     <option value="">{t('selectCategory')}</option>
-                    {categories.filter(c => c !== 'All').map(c => (
-                      <option key={c} value={c}>{c}</option>
+                    {categories.filter((item) => item !== 'All').map((item) => (
+                      <option key={item} value={item}>{item}</option>
                     ))}
                   </select>
                   <div className="inline-add-row">
-                    <input
-                      className="input"
-                      value={newCategory}
-                      onChange={e => setNewCategory(e.target.value)}
-                      placeholder={t('addCategory')}
-                    />
-                    <button className="btn btn-outline btn-sm" type="button" onClick={addCategoryFromForm}>
-                      {t('add')}
-                    </button>
+                    <input className="input" value={newCategoryEn} onChange={(event) => setNewCategoryEn(event.target.value)} placeholder="Category EN" />
+                    <input className="input" value={newCategoryAr} onChange={(event) => setNewCategoryAr(event.target.value)} placeholder="التصنيف بالعربية" dir="rtl" />
+                    <button className="btn btn-outline btn-sm" type="button" onClick={addCategoryFromForm}>{t('add')}</button>
                   </div>
                 </div>
                 <div className="form-group">
                   <label htmlFor="brand" className="form-label">{t('brand')} <span aria-hidden="true">*</span></label>
                   <select id="brand" className="select" value={form.brand} onChange={set('brand')} required>
                     <option value="">{t('selectBrand')}</option>
-                    {brands.filter(b => b !== 'All').map(b => (
-                      <option key={b} value={b}>{b}</option>
+                    {brands.filter((item) => item !== 'All').map((item) => (
+                      <option key={item} value={item}>{item}</option>
                     ))}
                   </select>
                   <div className="inline-add-row">
-                    <input
-                      className="input"
-                      value={newBrand}
-                      onChange={e => setNewBrand(e.target.value)}
-                      placeholder={t('addBrand')}
-                    />
-                    <button className="btn btn-outline btn-sm" type="button" onClick={addBrandFromForm}>
-                      {t('add')}
-                    </button>
+                    <input className="input" value={newBrandEn} onChange={(event) => setNewBrandEn(event.target.value)} placeholder="Brand EN" />
+                    <input className="input" value={newBrandAr} onChange={(event) => setNewBrandAr(event.target.value)} placeholder="العلامة بالعربية" dir="rtl" />
+                    <button className="btn btn-outline btn-sm" type="button" onClick={addBrandFromForm}>{t('add')}</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Pricing & Inventory */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('pricingInventory')}</h2>
@@ -201,13 +274,7 @@ export default function AdminProductFormPage({ navigate, product }) {
                   <label htmlFor="sku" className="form-label">SKU</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input id="sku" className="input" placeholder="AJ-VAL-001" value={form.sku} onChange={set('sku')} />
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={generateSKU}
-                      title="Auto-generate SKU"
-                      style={{ flexShrink: 0 }}
-                    >
+                    <button type="button" className="btn btn-outline btn-sm" onClick={generateSKU} style={{ flexShrink: 0 }}>
                       Auto
                     </button>
                   </div>
@@ -216,7 +283,6 @@ export default function AdminProductFormPage({ navigate, product }) {
             </div>
           </div>
 
-          {/* Technical Specs */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('technicalSpecs')}</h2>
@@ -225,7 +291,7 @@ export default function AdminProductFormPage({ navigate, product }) {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="size" className="form-label">{t('size')}</label>
-                  <input id="size" className="input" placeholder='e.g. 3/4 inch, 25mm' value={form.size} onChange={set('size')} />
+                  <input id="size" className="input" placeholder="e.g. 3/4 inch, 25mm" value={form.size} onChange={set('size')} />
                 </div>
                 <div className="form-group">
                   <label htmlFor="material" className="form-label">{t('material')}</label>
@@ -256,28 +322,59 @@ export default function AdminProductFormPage({ navigate, product }) {
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="admin-form-sidebar">
-          {/* Image Upload */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('productImage')}</h2>
             </div>
             <div className="card-body">
               <div className="image-upload-zone">
-                <div className="image-upload-icon" aria-hidden="true">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </div>
+                {previewSrc ? (
+                  <img
+                    src={previewSrc}
+                    alt="Product preview"
+                    style={{
+                      width: '100%',
+                      maxHeight: '180px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: '1px solid var(--line)',
+                      marginBottom: '0.75rem',
+                    }}
+                  />
+                ) : null}
                 <p>{t('uploadImage')}</p>
-                <p className="form-hint">{t('uploadHint')}</p>
-                <button className="btn btn-outline btn-sm" style={{ marginTop: '0.5rem' }}>
-                  {t('browseFiles')}
-                </button>
+                <p className="form-hint">JPG, PNG, or WEBP. Max 2MB.</p>
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="input"
+                  onChange={onFileChange}
+                  style={{ marginTop: '0.75rem' }}
+                />
+                {imageFile ? (
+                  <p className="form-hint" style={{ marginTop: '0.5rem' }}>
+                    Selected: {imageFile.name}
+                  </p>
+                ) : null}
+
+                <input
+                  className="input"
+                  style={{ marginTop: '0.75rem' }}
+                  placeholder="https://..."
+                  value={form.imageUrl}
+                  onChange={set('imageUrl')}
+                />
+                {imageUploadError ? (
+                  <p style={{ marginTop: '0.5rem', color: 'var(--danger)', fontSize: '0.8125rem' }}>
+                    {imageUploadError}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
 
-          {/* Status */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('productStatus')}</h2>
@@ -289,11 +386,7 @@ export default function AdminProductFormPage({ navigate, product }) {
                   <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{t('visibleInShop')}</p>
                 </div>
                 <label className="toggle" aria-label="Active product toggle">
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={e => setActive(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
                   <span className="toggle-slider" />
                 </label>
               </div>
@@ -304,34 +397,22 @@ export default function AdminProductFormPage({ navigate, product }) {
                   <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{t('highlightedInShop')}</p>
                 </div>
                 <label className="toggle" aria-label="Featured product toggle">
-                  <input
-                    type="checkbox"
-                    checked={featured}
-                    onChange={e => setFeatured(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={featured} onChange={(event) => setFeatured(event.target.checked)} />
                   <span className="toggle-slider" />
                 </label>
               </div>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {saveError ? (
                 <p style={{ color: 'var(--danger)', fontSize: '0.8125rem' }}>{saveError}</p>
               ) : null}
-              <button
-                className="btn btn-primary w-full"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? t('saving') : (isEditMode ? t('updateProduct') : t('saveProduct'))}
+              <button className="btn btn-primary w-full" onClick={handleSave} disabled={saving || uploadingImage}>
+                {uploadingImage ? 'Uploading image...' : saving ? t('saving') : isEditMode ? t('updateProduct') : t('saveProduct')}
               </button>
-              <button
-                className="btn btn-outline w-full"
-                onClick={() => navigate('admin-products')}
-              >
+              <button className="btn btn-outline w-full" onClick={() => navigate('admin-products')} disabled={saving || uploadingImage}>
                 {t('discardChanges')}
               </button>
             </div>

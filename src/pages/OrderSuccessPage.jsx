@@ -1,7 +1,7 @@
 // src/pages/OrderSuccessPage.jsx
 import { useLocalization } from '../i18n/Localization.jsx';
 
-export default function OrderSuccessPage({ navigate }) {
+export default function OrderSuccessPage({ navigate, order }) {
   const { t } = useLocalization();
 
   return (
@@ -12,8 +12,16 @@ export default function OrderSuccessPage({ navigate }) {
         <p className="success-msg">
           {t('orderPlacedMessage')}
         </p>
+        {order?.orderNumber ? (
+          <p className="success-msg" style={{ fontWeight: 600 }}>
+            #{order.orderNumber}
+          </p>
+        ) : null}
         <div className="success-actions">
-          <button className="btn btn-primary btn-lg" onClick={() => navigate('my-orders')}>
+          <button
+            className="btn btn-primary btn-lg"
+            onClick={() => navigate('my-orders', { lookup: order?.customer?.phone || order?.customer?.email || '' })}
+          >
             {t('viewMyOrders')}
           </button>
           <button className="btn btn-outline" onClick={() => navigate('shop')}>

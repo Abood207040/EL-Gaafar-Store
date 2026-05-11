@@ -1,5 +1,5 @@
 // src/components/layout/Footer.jsx
-import { STORE_INFO } from '../../data/orders.js';
+import { STORE_INFO } from '../../constants/store.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function Footer({ navigate }) {

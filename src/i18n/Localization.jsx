@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { FULFILLMENT, ORDER_STATUSES } from '../data/orders.js';
-import { STOCK_STATUSES } from '../data/products.js';
+import { FULFILLMENT, ORDER_STATUSES, STOCK_STATUSES } from '../constants/domain.js';
 
 const STORAGE_KEY = 'al-jafar-language';
 
@@ -169,7 +168,7 @@ const messages = {
     clearAll: 'مسح الكل',
     category: 'القسم',
     brand: 'العلامة',
-    priceRange: 'نطاق السعر (ر.س)',
+    priceRange: 'نطاق السعر (ج.م)',
     min: 'من',
     max: 'إلى',
     availability: 'التوفر',
@@ -227,7 +226,7 @@ const messages = {
     continue: 'متابعة',
     back: 'رجوع',
     receiveQuestion: 'كيف تريد استلام الطلب؟',
-    deliveryHint: 'توصيل إلى عنوانك - 25.00 ر.س',
+    deliveryHint: 'توصيل إلى عنوانك - 25.00 ج.م',
     pickupHint: 'استلام من متجر الجعفر - مجاناً',
     deliveryRequiresAddress: 'طلبات التوصيل تحتاج المدينة والمنطقة والعنوان قبل الدفع.',
     city: 'المدينة',
@@ -336,7 +335,7 @@ const messages = {
     addCategory: 'إضافة قسم',
     addBrand: 'إضافة علامة',
     pricingInventory: 'السعر والمخزون',
-    unitPriceSar: 'سعر الوحدة (ر.س)',
+    unitPriceSar: 'سعر الوحدة (ج.م)',
     inventoryCount: 'كمية المخزون',
     technicalSpecs: 'المواصفات الفنية',
     size: 'المقاس',
@@ -360,7 +359,7 @@ const messages = {
     image: 'الصورة',
     productName: 'اسم المنتج',
     sku: 'SKU',
-    priceSar: 'السعر (ر.س)',
+    priceSar: 'السعر (ج.م)',
     stock: 'المخزون',
     actions: 'الإجراءات',
     view: 'عرض',
@@ -411,7 +410,7 @@ const messages = {
     noValue: '—',
     loadingProducts: 'جاري تحميل المنتجات...',
     loadingAdminAuth: 'جاري التحقق من تسجيل الدخول وصلاحيات الإدارة...',
-    productsLoadFailed: 'تعذر تحميل المنتجات من Supabase. تم عرض بيانات محلية مؤقتاً.',
+    productsLoadFailed: 'تعذر تحميل المنتجات من Supabase.',
     confirmDeleteProduct: (name) => `هل تريد حذف المنتج "${name}"؟`,
     deleteProductFailed: 'تعذر حذف المنتج.',
     saveProductFailed: 'تعذر حفظ المنتج.',
@@ -454,7 +453,7 @@ messages.en = {
   clearAll: 'Clear All',
   category: 'Category',
   brand: 'Brand',
-  priceRange: 'Price Range (SAR)',
+  priceRange: 'Price Range (EGP)',
   min: 'Min',
   max: 'Max',
   availability: 'Availability',
@@ -512,7 +511,7 @@ messages.en = {
   continue: 'Continue',
   back: 'Back',
   receiveQuestion: 'How would you like to receive your order?',
-  deliveryHint: 'Delivered to your address - SAR 25.00',
+  deliveryHint: 'Delivered to your address - EGP 25.00',
   pickupHint: 'Collect from Al-Jafar Store - free',
   deliveryRequiresAddress: 'Delivery orders require city, area, and street address before payment.',
   city: 'City',
@@ -621,7 +620,7 @@ messages.en = {
   addCategory: 'Add category',
   addBrand: 'Add brand',
   pricingInventory: 'Pricing & Inventory',
-  unitPriceSar: 'Unit Price (SAR)',
+  unitPriceSar: 'Unit Price (EGP)',
   inventoryCount: 'Inventory Count',
   technicalSpecs: 'Technical Specifications',
   size: 'Size',
@@ -645,7 +644,7 @@ messages.en = {
   image: 'Image',
   productName: 'Product Name',
   sku: 'SKU',
-  priceSar: 'Price (SAR)',
+  priceSar: 'Price (EGP)',
   stock: 'Stock',
   actions: 'Actions',
   view: 'View',
@@ -696,7 +695,7 @@ messages.en = {
   noValue: '—',
   loadingProducts: 'Loading products...',
   loadingAdminAuth: 'Checking sign-in and admin permissions...',
-  productsLoadFailed: 'Could not load products from Supabase. Showing local fallback data.',
+  productsLoadFailed: 'Could not load products from Supabase.',
   confirmDeleteProduct: (name) => `Delete "${name}"?`,
   deleteProductFailed: 'Could not delete product.',
   saveProductFailed: 'Could not save product.',
@@ -759,7 +758,9 @@ export function LocalizationProvider({ children }) {
     const productName = (product) => (isArabic ? product.nameAr || product.nameEn : product.nameEn);
     const productAltName = (product) => (isArabic ? product.nameEn : product.nameAr);
     const productDescription = (product) =>
-      isArabic ? PRODUCT_DESCRIPTIONS_AR[product.id] || product.description : product.description;
+      isArabic
+        ? product.descriptionAr || PRODUCT_DESCRIPTIONS_AR[product.id] || product.descriptionEn || product.description
+        : product.descriptionEn || product.description;
     const customerStatus = (status) => {
       const key = {
         Active: 'customerStatusActive',

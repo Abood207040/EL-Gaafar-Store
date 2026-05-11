@@ -1,6 +1,5 @@
 // src/components/ui/StatusBadge.jsx
-import { ORDER_STATUSES } from '../../data/orders.js';
-import { STOCK_STATUSES } from '../../data/products.js';
+import { ORDER_STATUSES, STOCK_STATUSES } from '../../constants/domain.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 const stockVariantMap = {

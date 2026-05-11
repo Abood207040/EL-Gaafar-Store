@@ -1,44 +1,79 @@
 // src/pages/admin/AdminCustomersPage.jsx
-import { useState } from 'react';
-import { customers, customerStats } from '../../data/customers.js';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocalization } from '../../i18n/Localization.jsx';
+import { getAdminCustomers, getCustomerStats } from '../../services/adminCustomersService.js';
 
 export default function AdminCustomersPage() {
   const { t, customerStatus } = useLocalization();
+  const [customers, setCustomers] = useState([]);
+  const [stats, setStats] = useState({ total: 0, newThisMonth: 0, active: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
 
-  const filtered = customers.filter(c => {
-    const q = search.toLowerCase();
-    return !q ||
-      c.name.toLowerCase().includes(q) ||
-      c.phone.includes(q) ||
-      c.email.toLowerCase().includes(q);
-  });
+  useEffect(() => {
+    let ignore = false;
+    const loadCustomers = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [rows, statsData] = await Promise.all([getAdminCustomers(), getCustomerStats()]);
+        if (!ignore) {
+          setCustomers(rows);
+          setStats(statsData);
+        }
+      } catch (fetchError) {
+        if (!ignore) {
+          setError(fetchError.message || t('noCustomersFound'));
+          setCustomers([]);
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadCustomers();
+    return () => {
+      ignore = true;
+    };
+  }, [t]);
+
+  const filtered = useMemo(
+    () =>
+      customers.filter((customer) => {
+        const q = search.toLowerCase();
+        return (
+          !q ||
+          customer.name.toLowerCase().includes(q) ||
+          customer.phone.toLowerCase().includes(q) ||
+          customer.email.toLowerCase().includes(q)
+        );
+      }),
+    [customers, search]
+  );
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
     <div className="admin-page animate-fadeIn">
-      {/* Stats */}
       <div className="customer-stats">
         <div className="card stat-mini">
           <span className="stat-mini-label">{t('totalCustomers')}</span>
-          <span className="stat-mini-value">{customerStats.total}</span>
+          <span className="stat-mini-value">{stats.total}</span>
         </div>
         <div className="card stat-mini">
           <span className="stat-mini-label">{t('newThisMonth')}</span>
-          <span className="stat-mini-value" style={{ color: 'var(--success)' }}>{customerStats.newThisMonth}</span>
+          <span className="stat-mini-value" style={{ color: 'var(--success)' }}>{stats.newThisMonth}</span>
         </div>
         <div className="card stat-mini">
           <span className="stat-mini-label">{t('activeCustomers')}</span>
-          <span className="stat-mini-value" style={{ color: 'var(--accent)' }}>{customerStats.active}</span>
+          <span className="stat-mini-value" style={{ color: 'var(--accent)' }}>{stats.active}</span>
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className="admin-page-toolbar" style={{ marginTop: '1.5rem' }}>
         <div className="input-group" style={{ maxWidth: 320 }}>
           <span className="input-icon" aria-hidden="true">
@@ -49,22 +84,19 @@ export default function AdminCustomersPage() {
             type="search"
             placeholder={t('searchCustomers')}
             value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             aria-label={t('searchCustomers')}
           />
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-outline btn-sm">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            {t('export')}
-          </button>
-          <button className="btn btn-primary btn-sm">
-            + {t('addCustomer')}
-          </button>
-        </div>
       </div>
 
-      {/* Table */}
+      {error ? (
+        <p style={{ color: 'var(--danger)', marginTop: '0.75rem', fontSize: '0.875rem' }}>{error}</p>
+      ) : null}
+
       <div className="card" style={{ marginTop: '1rem' }}>
         <div className="table-wrapper" style={{ border: 'none' }}>
           <table className="table">
@@ -77,58 +109,64 @@ export default function AdminCustomersPage() {
                 <th>{t('totalCustomerOrders')}</th>
                 <th>{t('lastOrder')}</th>
                 <th>{t('status')}</th>
-                <th>{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                    {t('loadingProducts')}
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('noCustomersFound')}
                   </td>
                 </tr>
               ) : (
-                paginated.map(c => (
-                  <tr key={c.id}>
+                paginated.map((customer) => (
+                  <tr key={customer.id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div className="customer-avatar" aria-hidden="true">
-                          {c.name.charAt(0).toUpperCase()}
+                          {(customer.name || '?').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p style={{ fontWeight: 600 }}>{c.name}</p>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{c.id}</p>
+                          <p style={{ fontWeight: 600 }}>{customer.name || t('noValue')}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{customer.id}</p>
                         </div>
                       </div>
                     </td>
-                    <td style={{ fontSize: '0.875rem' }}>{c.phone}</td>
-                    <td style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{c.email || t('noValue')}</td>
+                    <td style={{ fontSize: '0.875rem' }}>{customer.phone || t('noValue')}</td>
+                    <td style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{customer.email || t('noValue')}</td>
                     <td style={{ fontSize: '0.875rem' }}>
-                      <span>{c.area}</span><br />
-                      <span style={{ color: 'var(--muted)', fontSize: '0.8125rem' }}>{c.city}</span>
+                      <span>{customer.area || t('noValue')}</span><br />
+                      <span style={{ color: 'var(--muted)', fontSize: '0.8125rem' }}>{customer.city || t('noValue')}</span>
                     </td>
                     <td>
-                      <strong>{c.totalOrders}</strong>
-                      {c.totalSpent > 0 && (
+                      <strong>{customer.totalOrders}</strong>
+                      {customer.totalSpent > 0 && (
                         <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                          SAR {c.totalSpent.toFixed(2)}
+                          EGP {customer.totalSpent.toFixed(2)}
                         </p>
                       )}
                     </td>
                     <td style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
-                      {c.lastOrderDate || t('noValue')}
+                      {customer.lastOrderDate || t('noValue')}
                     </td>
                     <td>
-                      <span className={`badge ${
-                        c.status === 'Active' ? 'badge-success' :
-                        c.status === 'New' ? 'badge-info' :
-                        'badge-muted'
-                      }`}>
-                        {customerStatus(c.status)}
+                      <span
+                        className={`badge ${
+                          customer.status === 'Active'
+                            ? 'badge-success'
+                            : customer.status === 'New'
+                              ? 'badge-info'
+                              : 'badge-muted'
+                        }`}
+                      >
+                        {customerStatus(customer.status)}
                       </span>
-                    </td>
-                    <td>
-                      <button className="btn btn-outline btn-sm">{t('view')}</button>
                     </td>
                   </tr>
                 ))
@@ -140,11 +178,32 @@ export default function AdminCustomersPage() {
 
       {totalPages > 1 && (
         <nav className="pagination" aria-label={t('customersPagination')}>
-          <button className="page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} aria-label={t('previousPage')}>‹</button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-            <button key={p} className={`page-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)} aria-label={t('pageNumber', p)}>{p}</button>
+          <button
+            className="page-btn"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            aria-label={t('previousPage')}
+          >
+            {'<'}
+          </button>
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((p) => (
+            <button
+              key={p}
+              className={`page-btn ${page === p ? 'active' : ''}`}
+              onClick={() => setPage(p)}
+              aria-label={t('pageNumber', p)}
+            >
+              {p}
+            </button>
           ))}
-          <button className="page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} aria-label={t('nextPage')}>›</button>
+          <button
+            className="page-btn"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            aria-label={t('nextPage')}
+          >
+            {'>'}
+          </button>
         </nav>
       )}
     </div>

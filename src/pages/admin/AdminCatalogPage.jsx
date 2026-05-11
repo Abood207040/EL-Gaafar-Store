@@ -1,13 +1,11 @@
-import { useState } from 'react';
-import { products } from '../../data/products.js';
+import { useEffect, useMemo, useState } from 'react';
 import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
+import { listAdminProducts } from '../../services/productsService.js';
 
 function OptionManager({
   title,
   description,
-  inputLabel,
-  placeholder,
   options,
   customOptions,
   countByOption,
@@ -15,14 +13,22 @@ function OptionManager({
   onRemove,
 }) {
   const { t } = useLocalization();
-  const [value, setValue] = useState('');
+  const [nameEn, setNameEn] = useState('');
+  const [nameAr, setNameAr] = useState('');
   const [message, setMessage] = useState('');
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const added = onAdd(value);
-    setMessage(added ? t('added', value.trim()) : t('enterUniqueName'));
-    if (added) setValue('');
+    try {
+      const added = await onAdd({ nameEn, nameAr });
+      setMessage(added ? t('added', nameEn.trim()) : t('enterUniqueName'));
+      if (added) {
+        setNameEn('');
+        setNameAr('');
+      }
+    } catch (error) {
+      setMessage(error.message || t('enterUniqueName'));
+    }
   };
 
   return (
@@ -37,13 +43,24 @@ function OptionManager({
       <div className="card-body">
         <form className="catalog-add-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor={`${title}-name`}>{inputLabel}</label>
+            <label className="form-label" htmlFor={`${title}-name-en`}>English Name</label>
             <input
-              id={`${title}-name`}
+              id={`${title}-name-en`}
               className="input"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              placeholder={placeholder}
+              value={nameEn}
+              onChange={(event) => setNameEn(event.target.value)}
+              placeholder="English name"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor={`${title}-name-ar`}>Arabic Name</label>
+            <input
+              id={`${title}-name-ar`}
+              className="input"
+              value={nameAr}
+              onChange={(event) => setNameAr(event.target.value)}
+              placeholder="الاسم العربي"
+              dir="rtl"
             />
           </div>
           <button className="btn btn-primary" type="submit">{t('add')}</button>
@@ -62,7 +79,7 @@ function OptionManager({
                   </p>
                 </div>
                 {isCustom ? (
-                  <button className="btn btn-danger btn-sm" type="button" onClick={() => onRemove(item)}>
+                  <button className="btn btn-danger btn-sm" type="button" onClick={async () => onRemove(item)}>
                     {t('remove')}
                   </button>
                 ) : (
@@ -79,28 +96,61 @@ function OptionManager({
 
 export default function AdminCatalogPage() {
   const { t } = useLocalization();
+  const [products, setProducts] = useState([]);
   const {
     categories,
     brands,
     customCategories,
     customBrands,
+    catalogWarnings,
     addCategory,
     addBrand,
     removeCategory,
     removeBrand,
   } = useCatalogOptions();
 
-  const countByCategory = (category) => products.filter((product) => product.category === category).length;
-  const countByBrand = (brand) => products.filter((product) => product.brand === brand).length;
+  useEffect(() => {
+    let ignore = false;
+    const loadProducts = async () => {
+      try {
+        const rows = await listAdminProducts();
+        if (!ignore) setProducts(rows);
+      } catch {
+        if (!ignore) setProducts([]);
+      }
+    };
+    loadProducts();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const counts = useMemo(() => {
+    const byCategory = new Map();
+    const byBrand = new Map();
+    for (const product of products) {
+      const category = product.category || '';
+      const brand = product.brand || '';
+      if (category) byCategory.set(category, (byCategory.get(category) || 0) + 1);
+      if (brand) byBrand.set(brand, (byBrand.get(brand) || 0) + 1);
+    }
+    return { byCategory, byBrand };
+  }, [products]);
+
+  const countByCategory = (category) => counts.byCategory.get(category) || 0;
+  const countByBrand = (brand) => counts.byBrand.get(brand) || 0;
 
   return (
     <div className="admin-page animate-fadeIn">
+      {catalogWarnings.length > 0 ? (
+        <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+          {catalogWarnings.join(' ')}
+        </p>
+      ) : null}
       <div className="catalog-manager-grid">
         <OptionManager
           title={t('categories')}
           description={t('categoriesDescription')}
-          inputLabel={t('newCategory')}
-          placeholder={t('addCategory')}
           options={categories}
           customOptions={customCategories}
           countByOption={countByCategory}
@@ -110,8 +160,6 @@ export default function AdminCatalogPage() {
         <OptionManager
           title={t('brands')}
           description={t('brandsDescription')}
-          inputLabel={t('newBrand')}
-          placeholder={t('addBrand')}
           options={brands}
           customOptions={customBrands}
           countByOption={countByBrand}

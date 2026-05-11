@@ -1,25 +1,16 @@
 // src/pages/admin/AdminDashboardPage.jsx
-import { orders, ORDER_STATUSES } from '../../data/orders.js';
-import { products, STOCK_STATUSES } from '../../data/products.js';
-import { OrderStatusBadge } from '../../components/ui/StatusBadge.jsx';
-import { StockBadge } from '../../components/ui/StatusBadge.jsx';
+import { useEffect, useMemo, useState } from 'react';
+import { ORDER_STATUSES, STOCK_STATUSES } from '../../constants/domain.js';
+import { OrderStatusBadge, StockBadge } from '../../components/ui/StatusBadge.jsx';
 import { useLocalization } from '../../i18n/Localization.jsx';
-
-const lowStockProducts = products.filter(
-  p => p.stockStatus === STOCK_STATUSES.LOW_STOCK || p.stockStatus === STOCK_STATUSES.OUT_OF_STOCK
-);
-
-const totalSales = orders
-  .filter(o => o.status === ORDER_STATUSES.DELIVERED)
-  .reduce((sum, o) => sum + o.total, 0);
-
-const pendingOrders = orders.filter(o => o.status === ORDER_STATUSES.PENDING).length;
+import { getAdminOrders } from '../../services/adminOrdersService.js';
+import { listAdminProducts } from '../../services/productsService.js';
 
 function StatCard({ label, value, icon, color, sub }) {
   return (
     <div className="stat-card card">
       <div className="stat-card-body">
-        <div className="stat-icon" style={{ background: color + '22', color }}>
+        <div className="stat-icon" style={{ background: `${color}22`, color }}>
           {icon}
         </div>
         <div>
@@ -34,42 +25,99 @@ function StatCard({ label, value, icon, color, sub }) {
 
 export default function AdminDashboardPage({ navigate }) {
   const { t, productName } = useLocalization();
+  const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [ordersRows, productsRows] = await Promise.all([getAdminOrders(), listAdminProducts()]);
+        if (!ignore) {
+          setOrders(ordersRows);
+          setProducts(productsRows);
+        }
+      } catch (fetchError) {
+        if (!ignore) {
+          setError(fetchError.message || t('productsLoadFailed'));
+          setOrders([]);
+          setProducts([]);
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      ignore = true;
+    };
+  }, [t]);
+
+  const lowStockProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          product.stockStatus === STOCK_STATUSES.LOW_STOCK ||
+          product.stockStatus === STOCK_STATUSES.OUT_OF_STOCK
+      ),
+    [products]
+  );
+
+  const totalSales = useMemo(
+    () =>
+      orders
+        .filter((order) => order.status === ORDER_STATUSES.DELIVERED)
+        .reduce((sum, order) => sum + order.total, 0),
+    [orders]
+  );
+
+  const pendingOrders = useMemo(
+    () => orders.filter((order) => order.status === ORDER_STATUSES.PENDING).length,
+    [orders]
+  );
 
   return (
     <div className="admin-page animate-fadeIn">
+      {error ? (
+        <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.875rem' }}>{error}</p>
+      ) : null}
       <div className="admin-stats-grid">
         <StatCard
           label={t('totalSales')}
-          value={`SAR ${totalSales.toFixed(2)}`}
-          icon="SAR"
+          value={loading ? '...' : `EGP ${totalSales.toFixed(2)}`}
+          icon="EGP"
           color="#F67113"
           sub={t('deliveredOrders')}
         />
         <StatCard
           label={t('totalOrders')}
-          value={orders.length}
-          icon="ORD"
+          value={loading ? '...' : orders.length}
+          icon="OR"
           color="#0EA5E9"
           sub={t('deliveryAndPickup')}
         />
         <StatCard
           label={t('pendingOrders')}
-          value={pendingOrders}
-          icon="NEW"
+          value={loading ? '...' : pendingOrders}
+          icon="PD"
           color="#F97316"
           sub={t('awaitingConfirmation')}
         />
         <StatCard
           label={t('lowStockItems')}
-          value={lowStockProducts.length}
-          icon="LOW"
+          value={loading ? '...' : lowStockProducts.length}
+          icon="ST"
           color="#DC2626"
           sub={t('needRestocking')}
         />
       </div>
 
       <div className="admin-dashboard-grid">
-        {/* Recent Orders */}
         <div className="card">
           <div className="card-header">
             <h2 style={{ fontSize: '1rem' }}>{t('recentOrders')}</h2>
@@ -88,25 +136,30 @@ export default function AdminDashboardPage({ navigate }) {
                 </tr>
               </thead>
               <tbody>
-                {orders.slice(0, 5).map(o => (
-                  <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => navigate('admin-orders')}>
-                    <td><span className="sku-text">#{o.id}</span></td>
+                {(orders.slice(0, 5)).map((order) => (
+                  <tr key={order.id} style={{ cursor: 'pointer' }} onClick={() => navigate('admin-orders')}>
+                    <td><span className="sku-text">#{order.orderNumber || order.id}</span></td>
                     <td>
-                      <p style={{ fontWeight: 500 }}>{o.customer.name}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{o.customer.phone}</p>
+                      <p style={{ fontWeight: 500 }}>{order.customer?.name}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{order.customer?.phone}</p>
                     </td>
-                    <td>SAR {o.total.toFixed(2)}</td>
-                    <td><OrderStatusBadge status={o.status} /></td>
+                    <td>EGP {order.total.toFixed(2)}</td>
+                    <td><OrderStatusBadge status={order.status} /></td>
                   </tr>
                 ))}
+                {!loading && orders.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)', padding: '1rem' }}>
+                      {t('noOrdersFound')}
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Right Panel */}
         <div>
-          {/* Stock Alerts */}
           <div className="card">
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('stockAlerts')}</h2>
@@ -118,15 +171,15 @@ export default function AdminDashboardPage({ navigate }) {
               {lowStockProducts.length === 0 ? (
                 <p style={{ color: 'var(--muted)', textAlign: 'center', padding: '1rem' }}>{t('wellStocked')}</p>
               ) : (
-                lowStockProducts.map(p => (
-                  <div key={p.id} className="alert-item">
+                lowStockProducts.slice(0, 6).map((product) => (
+                  <div key={product.id} className="alert-item">
                     <div>
-                      <p className="alert-item-name">{productName(p)}</p>
-                      <p className="alert-item-sku">{p.sku}</p>
+                      <p className="alert-item-name">{productName(product)}</p>
+                      <p className="alert-item-sku">{product.sku}</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{p.stock}</span>
-                      <StockBadge status={p.stockStatus} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{product.stock}</span>
+                      <StockBadge status={product.stockStatus} />
                     </div>
                   </div>
                 ))
@@ -134,7 +187,6 @@ export default function AdminDashboardPage({ navigate }) {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="card" style={{ marginTop: '1.25rem' }}>
             <div className="card-header">
               <h2 style={{ fontSize: '1rem' }}>{t('quickActions')}</h2>

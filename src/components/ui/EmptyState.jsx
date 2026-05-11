@@ -1,7 +1,6 @@
-// src/components/ui/EmptyState.jsx
 import Button from './Button.jsx';
 
-export default function EmptyState({ icon = '📦', title, description, actionLabel, onAction }) {
+export default function EmptyState({ icon = '...', title, description, actionLabel, onAction }) {
   return (
     <div className="empty-state animate-fadeIn">
       <div className="empty-icon" aria-hidden="true">{icon}</div>

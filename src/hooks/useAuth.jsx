@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
+  clearStoredAuthSession,
   getCurrentUser,
   getProfileByUserId,
   getSession,
@@ -10,6 +11,37 @@ import {
 
 const AuthContext = createContext(null);
 const DEV_MODE = import.meta.env.DEV;
+
+function logSessionDebug(label, session, event = '') {
+  if (!DEV_MODE) return;
+  const token = session?.access_token || '';
+  const tokenPreview = token
+    ? `${token.slice(0, 12)}...${token.slice(-8)}`
+    : null;
+  console.log('[auth] session debug:', {
+    label,
+    event,
+    hasSession: Boolean(session),
+    userId: session?.user?.id ?? null,
+    email: session?.user?.email ?? null,
+    expiresAt: session?.expires_at ?? null,
+    tokenPreview,
+  });
+}
+
+function shouldResetStoredSession(error) {
+  const message = String(error?.message || '').toLowerCase();
+  const code = String(error?.code || '').toLowerCase();
+  const name = String(error?.name || '').toLowerCase();
+  const text = `${message} ${code} ${name}`;
+  return (
+    text.includes('refresh token') ||
+    text.includes('invalid token') ||
+    text.includes('jwt') ||
+    text.includes('auth session missing') ||
+    text.includes('invalid_grant')
+  );
+}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -68,6 +100,7 @@ export function AuthProvider({ children }) {
         const initialSession = await getSession();
         if (!isMounted) return;
         setSession(initialSession);
+        logSessionDebug('init', initialSession);
         setAuthError('');
         if (initialSession?.user) {
           await loadCurrentUserProfile();
@@ -77,6 +110,9 @@ export function AuthProvider({ children }) {
       } catch (error) {
         if (!isMounted) return;
         console.error('Failed to load auth session/profile', error);
+        if (shouldResetStoredSession(error)) {
+          clearStoredAuthSession();
+        }
         setAuthError(error.message || 'Failed to load auth state.');
         clearUserState();
       } finally {
@@ -86,10 +122,10 @@ export function AuthProvider({ children }) {
 
     init();
 
-    const { data: subscription } = onAuthStateChange(async (_event, nextSession) => {
+    const { data: subscription } = onAuthStateChange(async (event, nextSession) => {
       if (!isMounted) return;
-      setLoading(true);
       setSession(nextSession);
+      logSessionDebug('auth_state_change', nextSession, event);
       setAuthError('');
       try {
         if (nextSession?.user) {
@@ -99,10 +135,13 @@ export function AuthProvider({ children }) {
         }
       } catch (error) {
         console.error('Failed during auth change/profile refresh', error);
+        if (shouldResetStoredSession(error)) {
+          clearStoredAuthSession();
+        }
         setAuthError(error.message || 'Failed to refresh auth state.');
-        clearUserState();
-      } finally {
-        if (isMounted) setLoading(false);
+        if (!nextSession?.user) {
+          clearUserState();
+        }
       }
     });
 
@@ -118,14 +157,20 @@ export function AuthProvider({ children }) {
   const signInWithPassword = async ({ email, password }) => {
     setLoading(true);
     setAuthError('');
-    const result = await signInWithPasswordService({ email, password });
-    setSession(result.session || null);
     try {
+      const result = await signInWithPasswordService({ email, password });
+      setSession(result.session || null);
+      logSessionDebug('sign_in', result.session || null);
       await loadCurrentUserProfile();
+      return result;
+    } catch (error) {
+      if (shouldResetStoredSession(error)) {
+        clearStoredAuthSession();
+      }
+      throw error;
     } finally {
       setLoading(false);
     }
-    return result;
   };
 
   const signOut = async () => {

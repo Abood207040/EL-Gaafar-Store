@@ -93,7 +93,7 @@ function App() {
 
   // Render admin pages inside AdminLayout
   if (isAdminPage) {
-    if (loading) {
+    if (loading && !user) {
       return (
         <div className="admin-auth-page">
           <div className="container-sm">
@@ -152,7 +152,7 @@ function App() {
   let pageContent;
   switch (currentPage) {
     case 'admin-login':
-      if (loading) {
+      if (loading && !user) {
         pageContent = (
           <div className="admin-auth-page">
             <div className="container-sm">
@@ -214,13 +214,13 @@ function App() {
       );
       break;
     case 'order-success':
-      pageContent = <OrderSuccessPage navigate={navigate} />;
+      pageContent = <OrderSuccessPage navigate={navigate} order={pageData?.order || null} />;
       break;
     case 'my-orders':
-      pageContent = <MyOrdersPage navigate={navigate} />;
+      pageContent = <MyOrdersPage navigate={navigate} initialLookup={pageData?.lookup || ''} />;
       break;
     case 'order-details':
-      pageContent = <OrderDetailsPage order={pageData} navigate={navigate} />;
+      pageContent = <OrderDetailsPage order={pageData?.order || pageData} navigate={navigate} />;
       break;
     default:
       pageContent = (

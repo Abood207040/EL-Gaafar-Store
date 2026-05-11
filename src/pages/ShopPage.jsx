@@ -1,17 +1,21 @@
 // src/pages/ShopPage.jsx
-import { useState, useMemo } from 'react';
-import { products, STOCK_STATUSES } from '../data/products.js';
+import { useEffect, useMemo, useState } from 'react';
+import { STOCK_STATUSES } from '../constants/domain.js';
 import ProductCard from '../components/products/ProductCard.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import heroImage from '../assets/main-image.png';
 import useCatalogOptions from '../hooks/useCatalogOptions.js';
 import { useLocalization } from '../i18n/Localization.jsx';
+import { listStoreProducts } from '../services/productsService.js';
 
 const ITEMS_PER_PAGE = 8;
 
 export default function ShopPage({ onAddToCart, navigate }) {
-  const { categories, brands } = useCatalogOptions();
+  const { categories, brands, catalogWarnings } = useCatalogOptions();
   const { t, isArabic, translateCategory, translateStock } = useLocalization();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedBrand, setSelectedBrand] = useState('All');
@@ -22,29 +26,50 @@ export default function ShopPage({ onAddToCart, navigate }) {
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  useEffect(() => {
+    let ignore = false;
+    const loadProducts = async () => {
+      setLoading(true);
+      setLoadError('');
+      try {
+        const rows = await listStoreProducts();
+        if (!ignore) setProducts(rows);
+      } catch (error) {
+        if (!ignore) setLoadError(error.message || t('productsLoadFailed'));
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadProducts();
+    return () => {
+      ignore = true;
+    };
+  }, [t]);
+
   const availabilityOptions = Object.values(STOCK_STATUSES);
 
   const filtered = useMemo(() => {
     let list = [...products];
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(p =>
+      list = list.filter((p) =>
         p.nameEn.toLowerCase().includes(q) ||
-        p.nameAr.includes(q) ||
+        p.nameAr.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
         p.brand.toLowerCase().includes(q)
       );
     }
     if (selectedCategory !== 'All') {
-      list = list.filter(p => p.category === selectedCategory);
+      list = list.filter((p) => p.category === selectedCategory);
     }
     if (selectedBrand !== 'All') {
-      list = list.filter(p => p.brand === selectedBrand);
+      list = list.filter((p) => p.brand === selectedBrand);
     }
-    if (priceMin !== '') list = list.filter(p => p.price >= Number(priceMin));
-    if (priceMax !== '') list = list.filter(p => p.price <= Number(priceMax));
+    if (priceMin !== '') list = list.filter((p) => p.price >= Number(priceMin));
+    if (priceMax !== '') list = list.filter((p) => p.price <= Number(priceMax));
     if (availability.length) {
-      list = list.filter(p => availability.includes(p.stockStatus));
+      list = list.filter((p) => availability.includes(p.stockStatus));
     }
     if (sort === 'price-asc') list.sort((a, b) => a.price - b.price);
     if (sort === 'price-desc') list.sort((a, b) => b.price - a.price);
@@ -56,7 +81,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
       });
     }
     return list;
-  }, [search, selectedCategory, selectedBrand, priceMin, priceMax, availability, sort, isArabic]);
+  }, [availability, isArabic, priceMax, priceMin, products, search, selectedBrand, selectedCategory, sort]);
 
   const sortOptions = [
     { value: 'default', label: t('sortDefault') },
@@ -69,20 +94,25 @@ export default function ShopPage({ onAddToCart, navigate }) {
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const resetFilters = () => {
-    setSearch(''); setSelectedCategory('All'); setSelectedBrand('All');
-    setPriceMin(''); setPriceMax(''); setAvailability([]); setSort('default'); setPage(1);
+    setSearch('');
+    setSelectedCategory('All');
+    setSelectedBrand('All');
+    setPriceMin('');
+    setPriceMax('');
+    setAvailability([]);
+    setSort('default');
+    setPage(1);
   };
 
   const toggleAvailability = (val) => {
-    setAvailability(prev =>
-      prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]
+    setAvailability((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
     );
     setPage(1);
   };
 
   return (
     <div className="shop-page">
-      {/* Page Banner */}
       <div className="shop-banner">
         <div className="container">
           <div className="shop-banner-inner">
@@ -105,17 +135,20 @@ export default function ShopPage({ onAddToCart, navigate }) {
 
       <div className="container">
         <div className="shop-layout">
-          {/* Sidebar */}
           <aside className={`shop-sidebar ${filtersOpen ? 'open' : ''}`} aria-label="Shop filters">
             <div className="sidebar-header">
               <h2 className="sidebar-title">{t('filters')}</h2>
               <button className="btn btn-ghost btn-sm" onClick={resetFilters}>{t('clearAll')}</button>
             </div>
+            {catalogWarnings.length > 0 ? (
+              <p style={{ color: 'var(--danger)', fontSize: '0.8125rem', marginBottom: '0.75rem' }}>
+                {catalogWarnings.join(' ')}
+              </p>
+            ) : null}
 
-            {/* Category */}
             <div className="filter-group">
               <h3 className="filter-label">{t('category')}</h3>
-              {categories.map(cat => (
+              {categories.map((cat) => (
                 <label key={cat} className="filter-option">
                   <input
                     type="radio"
@@ -125,16 +158,15 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   />
                   <span>{cat === 'All' ? t('allCategories') : translateCategory(cat)}</span>
                   <span className="filter-count">
-                    {cat === 'All' ? products.length : products.filter(p => p.category === cat).length}
+                    {cat === 'All' ? products.length : products.filter((p) => p.category === cat).length}
                   </span>
                 </label>
               ))}
             </div>
 
-            {/* Brand */}
             <div className="filter-group">
               <h3 className="filter-label">{t('brand')}</h3>
-              {brands.map(brand => (
+              {brands.map((brand) => (
                 <label key={brand} className="filter-option">
                   <input
                     type="radio"
@@ -147,7 +179,6 @@ export default function ShopPage({ onAddToCart, navigate }) {
               ))}
             </div>
 
-            {/* Price Range */}
             <div className="filter-group">
               <h3 className="filter-label">{t('priceRange')}</h3>
               <div className="price-range-inputs">
@@ -157,26 +188,25 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   placeholder={t('min')}
                   value={priceMin}
                   min="0"
-                  onChange={e => { setPriceMin(e.target.value); setPage(1); }}
+                  onChange={(event) => { setPriceMin(event.target.value); setPage(1); }}
                   aria-label="Minimum price"
                 />
-                <span className="price-range-sep">–</span>
+                <span className="price-range-sep">-</span>
                 <input
                   className="input"
                   type="number"
                   placeholder={t('max')}
                   value={priceMax}
                   min="0"
-                  onChange={e => { setPriceMax(e.target.value); setPage(1); }}
+                  onChange={(event) => { setPriceMax(event.target.value); setPage(1); }}
                   aria-label="Maximum price"
                 />
               </div>
             </div>
 
-            {/* Availability */}
             <div className="filter-group">
               <h3 className="filter-label">{t('availability')}</h3>
-              {availabilityOptions.map(opt => (
+              {availabilityOptions.map((opt) => (
                 <label key={opt} className="filter-option">
                   <input
                     type="checkbox"
@@ -189,9 +219,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="shop-main" id="main-content">
-            {/* Toolbar */}
             <div className="shop-toolbar">
               <div className="input-group shop-search">
                 <span className="input-icon" aria-hidden="true">
@@ -202,23 +230,21 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   type="search"
                   placeholder={t('searchProducts')}
                   value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(event) => { setSearch(event.target.value); setPage(1); }}
                   aria-label={t('searchProducts')}
                 />
               </div>
 
               <div className="toolbar-right">
-                <span className="results-count">
-                  {t('products', filtered.length)}
-                </span>
+                <span className="results-count">{t('products', filtered.length)}</span>
                 <select
                   className="select sort-select"
                   value={sort}
-                  onChange={e => { setSort(e.target.value); setPage(1); }}
+                  onChange={(event) => { setSort(event.target.value); setPage(1); }}
                   aria-label={t('sortDefault')}
                 >
-                  {sortOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
                 <button
@@ -232,9 +258,8 @@ export default function ShopPage({ onAddToCart, navigate }) {
               </div>
             </div>
 
-            {/* Category Quick Tabs */}
             <div className="category-tabs" role="tablist" aria-label={t('category')}>
-              {categories.slice(0, 7).map(cat => (
+              {categories.slice(0, 7).map((cat) => (
                 <button
                   key={cat}
                   role="tab"
@@ -247,40 +272,40 @@ export default function ShopPage({ onAddToCart, navigate }) {
               ))}
             </div>
 
-            {/* Product Grid */}
-            {paginated.length === 0 ? (
+            {loading ? (
+              <EmptyState icon="..." title={t('loadingProducts')} description={t('loadingProducts')} />
+            ) : paginated.length === 0 ? (
               <EmptyState
-                icon="🔧"
+                icon="*"
                 title={t('noProductsFound')}
-                description={t('adjustFilters')}
+                description={loadError || t('adjustFilters')}
                 actionLabel={t('clearFilters')}
                 onAction={resetFilters}
               />
             ) : (
               <div className="product-grid">
-                {paginated.map(product => (
+                {paginated.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}
                     onAddToCart={onAddToCart}
-                    onViewDetails={() => navigate('product-details', product)}
+                    onViewDetails={() => navigate('product-details', { id: product.id })}
                   />
                 ))}
               </div>
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <nav className="pagination" aria-label={t('productsPagination')}>
                 <button
                   className="page-btn"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
                   aria-label={t('previousPage')}
                 >
-                  ‹
+                  {'<'}
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button
                     key={p}
                     className={`page-btn ${page === p ? 'active' : ''}`}
@@ -293,11 +318,11 @@ export default function ShopPage({ onAddToCart, navigate }) {
                 ))}
                 <button
                   className="page-btn"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
                   aria-label={t('nextPage')}
                 >
-                  ›
+                  {'>'}
                 </button>
               </nav>
             )}
