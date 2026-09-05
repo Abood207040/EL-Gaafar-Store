@@ -1,214 +1,79 @@
-// src/pages/admin/AdminDashboardPage.jsx
-import { useEffect, useMemo, useState } from 'react';
-import { ORDER_STATUSES, STOCK_STATUSES } from '../../constants/domain.js';
-import { OrderStatusBadge, StockBadge } from '../../components/ui/StatusBadge.jsx';
-import { useLocalization } from '../../i18n/Localization.jsx';
-import { getAdminOrders } from '../../services/adminOrdersService.js';
-import { listAdminProducts } from '../../services/productsService.js';
-
-function StatCard({ label, value, icon, color, sub }) {
-  return (
-    <div className="stat-card card">
-      <div className="stat-card-body">
-        <div className="stat-icon" style={{ background: `${color}22`, color }}>
-          {icon}
-        </div>
-        <div>
-          <p className="stat-label">{label}</p>
-          <p className="stat-value">{value}</p>
-          {sub && <p className="stat-sub">{sub}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AdminDashboardPage({ navigate }) {
-  const { t, productName } = useLocalization();
-  const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let ignore = false;
-    const loadDashboard = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const [ordersRows, productsRows] = await Promise.all([getAdminOrders(), listAdminProducts()]);
-        if (!ignore) {
-          setOrders(ordersRows);
-          setProducts(productsRows);
-        }
-      } catch (fetchError) {
-        if (!ignore) {
-          setError(fetchError.message || t('productsLoadFailed'));
-          setOrders([]);
-          setProducts([]);
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-
-    loadDashboard();
-    return () => {
-      ignore = true;
-    };
-  }, [t]);
-
-  const lowStockProducts = useMemo(
-    () =>
-      products.filter(
-        (product) =>
-          product.stockStatus === STOCK_STATUSES.LOW_STOCK ||
-          product.stockStatus === STOCK_STATUSES.OUT_OF_STOCK
-      ),
-    [products]
-  );
-
-  const totalSales = useMemo(
-    () =>
-      orders
-        .filter((order) => order.status === ORDER_STATUSES.DELIVERED)
-        .reduce((sum, order) => sum + order.total, 0),
-    [orders]
-  );
-
-  const pendingOrders = useMemo(
-    () => orders.filter((order) => order.status === ORDER_STATUSES.PENDING).length,
-    [orders]
-  );
 
   return (
-    <div className="admin-page animate-fadeIn">
-      {error ? (
-        <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.875rem' }}>{error}</p>
-      ) : null}
-      <div className="admin-stats-grid">
-        <StatCard
-          label={t('totalSales')}
-          value={loading ? '...' : `EGP ${totalSales.toFixed(2)}`}
-          icon="EGP"
-          color="#F67113"
-          sub={t('deliveredOrders')}
-        />
-        <StatCard
-          label={t('totalOrders')}
-          value={loading ? '...' : orders.length}
-          icon="OR"
-          color="#0EA5E9"
-          sub={t('deliveryAndPickup')}
-        />
-        <StatCard
-          label={t('pendingOrders')}
-          value={loading ? '...' : pendingOrders}
-          icon="PD"
-          color="#F97316"
-          sub={t('awaitingConfirmation')}
-        />
-        <StatCard
-          label={t('lowStockItems')}
-          value={loading ? '...' : lowStockProducts.length}
-          icon="ST"
-          color="#DC2626"
-          sub={t('needRestocking')}
-        />
+    <div className="admin-page animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-color)', marginBottom: '0.5rem' }}>
+          Welcome back to Al-Jafar Store
+        </h1>
+        <p style={{ color: 'var(--muted)', fontSize: '1.1rem' }}>
+          Select a management module to continue
+        </p>
       </div>
 
-      <div className="admin-dashboard-grid">
-        <div className="card">
-          <div className="card-header">
-            <h2 style={{ fontSize: '1rem' }}>{t('recentOrders')}</h2>
-            <button className="btn btn-outline btn-sm" onClick={() => navigate('admin-orders')}>
-              {t('viewAll')}
-            </button>
+      <div className="mega-hub-grid" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+        gap: '2rem', 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        width: '100%' 
+      }}>
+        {/* MEGA ICON 1: WEBSITE */}
+        <button 
+          className="card mega-hub-card" 
+          onClick={() => navigate('admin-online-dashboard')}
+          style={{ padding: '3rem 2rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s ease', border: '1px solid var(--border-color)', background: 'var(--card-bg)', borderRadius: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-10px)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
           </div>
-          <div className="table-wrapper" style={{ border: 'none' }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('adminOrders')}</th>
-                  <th>{t('customer')}</th>
-                  <th>{t('total')}</th>
-                  <th>{t('status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(orders.slice(0, 5)).map((order) => (
-                  <tr key={order.id} style={{ cursor: 'pointer' }} onClick={() => navigate('admin-orders')}>
-                    <td><span className="sku-text">#{order.orderNumber || order.id}</span></td>
-                    <td>
-                      <p style={{ fontWeight: 500 }}>{order.customer?.name}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{order.customer?.phone}</p>
-                    </td>
-                    <td>EGP {order.total.toFixed(2)}</td>
-                    <td><OrderStatusBadge status={order.status} /></td>
-                  </tr>
-                ))}
-                {!loading && orders.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)', padding: '1rem' }}>
-                      {t('noOrdersFound')}
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>Website</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Manage online orders, e-commerce catalog, and online customer data.</p>
+        </button>
 
-        <div>
-          <div className="card">
-            <div className="card-header">
-              <h2 style={{ fontSize: '1rem' }}>{t('stockAlerts')}</h2>
-              <button className="btn btn-outline btn-sm" onClick={() => navigate('admin-inventory')}>
-                {t('inventory')}
-              </button>
-            </div>
-            <div className="card-body" style={{ padding: '0.75rem' }}>
-              {lowStockProducts.length === 0 ? (
-                <p style={{ color: 'var(--muted)', textAlign: 'center', padding: '1rem' }}>{t('wellStocked')}</p>
-              ) : (
-                lowStockProducts.slice(0, 6).map((product) => (
-                  <div key={product.id} className="alert-item">
-                    <div>
-                      <p className="alert-item-name">{productName(product)}</p>
-                      <p className="alert-item-sku">{product.sku}</p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{product.stock}</span>
-                      <StockBadge status={product.stockStatus} />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* MEGA ICON 2: STORE */}
+        <button 
+          className="card mega-hub-card" 
+          onClick={() => navigate('admin-pos')}
+          style={{ padding: '3rem 2rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s ease', border: '1px solid var(--border-color)', background: 'var(--card-bg)', borderRadius: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-10px)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', boxShadow: '0 10px 15px -3px rgba(249, 115, 22, 0.3)' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
           </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>Store</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Physical point of sale, cashier dashboard, and in-store sales history.</p>
+        </button>
 
-          <div className="card" style={{ marginTop: '1.25rem' }}>
-            <div className="card-header">
-              <h2 style={{ fontSize: '1rem' }}>{t('quickActions')}</h2>
-            </div>
-            <div className="card-body">
-              <div className="quick-actions">
-                <button className="quick-action-btn" onClick={() => navigate('admin-product-form')}>
-                  <span>+</span> {t('addProduct')}
-                </button>
-                <button className="quick-action-btn" onClick={() => navigate('admin-orders')}>
-                  <span>OR</span> {t('viewOrders')}
-                </button>
-                <button className="quick-action-btn" onClick={() => navigate('admin-inventory')}>
-                  <span>ST</span> {t('inventory')}
-                </button>
-                <button className="quick-action-btn" onClick={() => navigate('admin-customers')}>
-                  <span>CU</span> {t('customers')}
-                </button>
-              </div>
-            </div>
+        {/* MEGA ICON 3: STORAGE */}
+        <button 
+          className="card mega-hub-card" 
+          onClick={() => navigate('admin-inventory')}
+          style={{ padding: '3rem 2rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s ease', border: '1px solid var(--border-color)', background: 'var(--card-bg)', borderRadius: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-10px)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.3)' }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
           </div>
-        </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>Storage</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Manage warehouse inventory, track stock movements, and restocking.</p>
+        </button>
       </div>
     </div>
   );

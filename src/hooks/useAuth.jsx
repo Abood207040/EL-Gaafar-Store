@@ -7,6 +7,8 @@ import {
   onAuthStateChange,
   signInWithPassword as signInWithPasswordService,
   signOut as signOutService,
+  getCustomerProfile,
+  signUpWithPassword as signUpWithPasswordService
 } from '../services/authService.js';
 
 const AuthContext = createContext(null);
@@ -47,6 +49,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [customerProfile, setCustomerProfile] = useState(null);
   const [adminMessage, setAdminMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState('');
@@ -75,6 +78,7 @@ export function AuthProvider({ children }) {
   const clearUserState = () => {
     setUser(null);
     setProfile(null);
+    setCustomerProfile(null);
     setAdminMessage('');
   };
 
@@ -85,50 +89,29 @@ export function AuthProvider({ children }) {
       return { user: null, profile: null, isAdmin: false, message: '' };
     }
 
-    const currentProfile = await getProfileByUserId(currentUser.id);
+    const [currentProfile, currentCustomerProfile] = await Promise.all([
+      getProfileByUserId(currentUser.id),
+      getCustomerProfile()
+    ]);
+
     const { isAdmin, message } = setAdminState(currentUser, currentProfile);
-    return { user: currentUser, profile: currentProfile, isAdmin, message };
+    setCustomerProfile(currentCustomerProfile);
+
+    return { user: currentUser, profile: currentProfile, customerProfile: currentCustomerProfile, isAdmin, message };
   };
 
   useEffect(() => {
     let isMounted = true;
 
-    const init = async () => {
+    const handleAuthChange = async (event, currentSession) => {
       if (!isMounted) return;
-      setLoading(true);
-      try {
-        const initialSession = await getSession();
-        if (!isMounted) return;
-        setSession(initialSession);
-        logSessionDebug('init', initialSession);
-        setAuthError('');
-        if (initialSession?.user) {
-          await loadCurrentUserProfile();
-        } else {
-          clearUserState();
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        console.error('Failed to load auth session/profile', error);
-        if (shouldResetStoredSession(error)) {
-          clearStoredAuthSession();
-        }
-        setAuthError(error.message || 'Failed to load auth state.');
-        clearUserState();
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    init();
-
-    const { data: subscription } = onAuthStateChange(async (event, nextSession) => {
-      if (!isMounted) return;
-      setSession(nextSession);
-      logSessionDebug('auth_state_change', nextSession, event);
+      
+      setSession(currentSession);
+      logSessionDebug('auth_state_change', currentSession, event);
       setAuthError('');
+
       try {
-        if (nextSession?.user) {
+        if (currentSession?.user) {
           await loadCurrentUserProfile();
         } else {
           clearUserState();
@@ -139,18 +122,38 @@ export function AuthProvider({ children }) {
           clearStoredAuthSession();
         }
         setAuthError(error.message || 'Failed to refresh auth state.');
-        if (!nextSession?.user) {
+        if (!currentSession?.user) {
           clearUserState();
         }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
+    };
+
+    const { data: subscription } = onAuthStateChange((event, nextSession) => {
+      handleAuthChange(event, nextSession);
     });
+
+    // Supabase usually fires INITIAL_SESSION synchronously or immediately,
+    // but as a fallback, we fetch session if loading is still true after a small delay.
+    const fallbackTimer = setTimeout(async () => {
+      if (isMounted && loading) {
+        try {
+          const fbSession = await getSession();
+          await handleAuthChange('FALLBACK_INIT', fbSession);
+        } catch {
+          if (isMounted) setLoading(false);
+        }
+      }
+    }, 1000);
 
     return () => {
       isMounted = false;
+      clearTimeout(fallbackTimer);
       subscription?.subscription?.unsubscribe();
     };
-    // `loadCurrentUserProfile` intentionally lives in component scope for shared reuse
-    // between init/auth-change/sign-in flows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -161,6 +164,25 @@ export function AuthProvider({ children }) {
       const result = await signInWithPasswordService({ email, password });
       setSession(result.session || null);
       logSessionDebug('sign_in', result.session || null);
+      const profileState = await loadCurrentUserProfile();
+      return { ...result, isAdmin: profileState.isAdmin };
+    } catch (error) {
+      if (shouldResetStoredSession(error)) {
+        clearStoredAuthSession();
+      }
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUpWithPassword = async ({ email, password }) => {
+    setLoading(true);
+    setAuthError('');
+    try {
+      const result = await signUpWithPasswordService({ email, password });
+      setSession(result.session || null);
+      logSessionDebug('sign_up', result.session || null);
       await loadCurrentUserProfile();
       return result;
     } catch (error) {
@@ -189,11 +211,13 @@ export function AuthProvider({ children }) {
     session,
     user,
     profile,
+    customerProfile,
     isAdmin,
     adminMessage,
     authError,
     loading,
     signInWithPassword,
+    signUpWithPassword,
     signOut,
   };
 

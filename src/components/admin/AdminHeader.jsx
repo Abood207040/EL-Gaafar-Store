@@ -42,6 +42,19 @@ export default function AdminHeader({ title, subtitle, navigate }) {
             <span className="admin-profile-name">{t('adminUser')}</span>
             <span className="admin-profile-role">{t('storeManager')}</span>
           </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => navigate('shop')}
+            aria-label={t('viewStore')}
+            id="admin-view-store-btn"
+            title={t('viewStore')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginInlineEnd: '0.375rem', verticalAlign: 'middle' }}>
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            {t('viewStore')}
+          </button>
           <button type="button" className="btn btn-outline btn-sm" onClick={handleSignOut}>
             {t('signOut')}
           </button>

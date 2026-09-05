@@ -1,9 +1,9 @@
 // src/pages/ShopPage.jsx
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { STOCK_STATUSES } from '../constants/domain.js';
 import ProductCard from '../components/products/ProductCard.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
-import heroImage from '../assets/main-image.png';
 import useCatalogOptions from '../hooks/useCatalogOptions.js';
 import { useLocalization } from '../i18n/Localization.jsx';
 import { listStoreProducts } from '../services/productsService.js';
@@ -13,18 +13,39 @@ const ITEMS_PER_PAGE = 8;
 export default function ShopPage({ onAddToCart, navigate }) {
   const { categories, brands, catalogWarnings } = useCatalogOptions();
   const { t, isArabic, translateCategory, translateStock } = useLocalization();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedBrand, setSelectedBrand] = useState('All');
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const [availability, setAvailability] = useState([]);
-  const [sort, setSort] = useState('default');
-  const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Read filters from URL
+  const search = searchParams.get('q') || '';
+  const selectedCategory = searchParams.get('category') || 'All';
+  const selectedBrand = searchParams.get('brand') || 'All';
+  const priceMin = searchParams.get('min') || '';
+  const priceMax = searchParams.get('max') || '';
+  const sort = searchParams.get('sort') || 'default';
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  
+  // Availability is still local state for simplicity unless we want comma-separated URL
+  const [availability, setAvailability] = useState([]);
+
+  // Helper to update URL params
+  const updateFilter = (key, value) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value === '' || value === 'All' || value === 'default' || (key === 'page' && value === 1)) {
+      newParams.delete(key);
+    } else {
+      newParams.set(key, value);
+    }
+    // Reset page to 1 when changing any filter except page
+    if (key !== 'page') {
+      newParams.delete('page');
+    }
+    setSearchParams(newParams);
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -94,44 +115,19 @@ export default function ShopPage({ onAddToCart, navigate }) {
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const resetFilters = () => {
-    setSearch('');
-    setSelectedCategory('All');
-    setSelectedBrand('All');
-    setPriceMin('');
-    setPriceMax('');
+    setSearchParams(new URLSearchParams());
     setAvailability([]);
-    setSort('default');
-    setPage(1);
   };
 
   const toggleAvailability = (val) => {
     setAvailability((prev) =>
       prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
     );
-    setPage(1);
+    updateFilter('page', 1);
   };
 
   return (
-    <div className="shop-page">
-      <div className="shop-banner">
-        <div className="container">
-          <div className="shop-banner-inner">
-            <div className="shop-banner-copy">
-              <span className="shop-kicker">{t('plumbingEssentials')}</span>
-              <h1>{t('heroTitle')}</h1>
-              <p>{t('heroSubtitle')}</p>
-              <div className="shop-banner-metrics" aria-label="Store highlights">
-                <span>{t('productLines')}</span>
-                <span>{t('codOnly')}</span>
-                <span>{t('pickupFromShop')}</span>
-              </div>
-            </div>
-            <div className="shop-banner-media" aria-hidden="true">
-              <img src={heroImage} alt="" />
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="shop-page" style={{ paddingTop: '2rem' }}>
 
       <div className="container">
         <div className="shop-layout">
@@ -154,7 +150,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                     type="radio"
                     name="category"
                     checked={selectedCategory === cat}
-                    onChange={() => { setSelectedCategory(cat); setPage(1); }}
+                    onChange={() => updateFilter('category', cat)}
                   />
                   <span>{cat === 'All' ? t('allCategories') : translateCategory(cat)}</span>
                   <span className="filter-count">
@@ -172,7 +168,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                     type="radio"
                     name="brand"
                     checked={selectedBrand === brand}
-                    onChange={() => { setSelectedBrand(brand); setPage(1); }}
+                    onChange={() => updateFilter('brand', brand)}
                   />
                   <span>{brand === 'All' ? t('allBrands') : brand}</span>
                 </label>
@@ -188,7 +184,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   placeholder={t('min')}
                   value={priceMin}
                   min="0"
-                  onChange={(event) => { setPriceMin(event.target.value); setPage(1); }}
+                  onChange={(event) => updateFilter('min', event.target.value)}
                   aria-label="Minimum price"
                 />
                 <span className="price-range-sep">-</span>
@@ -198,7 +194,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   placeholder={t('max')}
                   value={priceMax}
                   min="0"
-                  onChange={(event) => { setPriceMax(event.target.value); setPage(1); }}
+                  onChange={(event) => updateFilter('max', event.target.value)}
                   aria-label="Maximum price"
                 />
               </div>
@@ -230,7 +226,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   type="search"
                   placeholder={t('searchProducts')}
                   value={search}
-                  onChange={(event) => { setSearch(event.target.value); setPage(1); }}
+                  onChange={(event) => updateFilter('q', event.target.value)}
                   aria-label={t('searchProducts')}
                 />
               </div>
@@ -240,7 +236,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                 <select
                   className="select sort-select"
                   value={sort}
-                  onChange={(event) => { setSort(event.target.value); setPage(1); }}
+                  onChange={(event) => updateFilter('sort', event.target.value)}
                   aria-label={t('sortDefault')}
                 >
                   {sortOptions.map((option) => (
@@ -265,7 +261,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   role="tab"
                   aria-selected={selectedCategory === cat}
                   className={`category-tab ${selectedCategory === cat ? 'active' : ''}`}
-                  onClick={() => { setSelectedCategory(cat); setPage(1); }}
+                  onClick={() => updateFilter('category', cat)}
                 >
                   {cat === 'All' ? t('allCategories') : translateCategory(cat)}
                 </button>
@@ -299,7 +295,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
               <nav className="pagination" aria-label={t('productsPagination')}>
                 <button
                   className="page-btn"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => updateFilter('page', Math.max(1, page - 1))}
                   disabled={page === 1}
                   aria-label={t('previousPage')}
                 >
@@ -309,7 +305,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   <button
                     key={p}
                     className={`page-btn ${page === p ? 'active' : ''}`}
-                    onClick={() => setPage(p)}
+                    onClick={() => updateFilter('page', p)}
                     aria-label={t('pageNumber', p)}
                     aria-current={page === p ? 'page' : undefined}
                   >
@@ -318,7 +314,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
                 ))}
                 <button
                   className="page-btn"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() => updateFilter('page', Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
                   aria-label={t('nextPage')}
                 >

@@ -1,14 +1,39 @@
 // src/components/admin/AdminSidebar.jsx
 import { useLocalization } from '../../i18n/Localization.jsx';
 
-const navItems = [
-  { id: 'admin-dashboard', labelKey: 'adminDashboard', icon: 'DB' },
-  { id: 'admin-products', labelKey: 'adminProducts', icon: 'PR' },
-  { id: 'admin-product-form', labelKey: 'addProduct', icon: '+' },
-  { id: 'admin-catalog', labelKey: 'adminCatalog', icon: 'CB' },
-  { id: 'admin-orders', labelKey: 'adminOrders', icon: 'OR' },
-  { id: 'admin-inventory', labelKey: 'inventory', icon: 'ST' },
-  { id: 'admin-customers', labelKey: 'customers', icon: 'CU' },
+const navGroups = [
+  {
+    title: 'GENERAL',
+    items: [
+      { id: 'admin-dashboard', label: 'Admin Hub', icon: '🏠' }
+    ]
+  },
+  {
+    title: 'ONLINE',
+    items: [
+      { id: 'admin-online-dashboard', labelKey: 'adminDashboard', icon: 'DB' },
+      { id: 'admin-orders', labelKey: 'adminOrders', icon: 'OR' },
+      { id: 'admin-products', labelKey: 'adminProducts', icon: 'PR' },
+      { id: 'admin-product-form', labelKey: 'addProduct', icon: '+' },
+      { id: 'admin-inventory', labelKey: 'inventory', icon: 'ST' },
+      { id: 'admin-customers', labelKey: 'customers', icon: 'CU' }
+    ]
+  },
+  {
+    title: 'OFFLINE',
+    items: [
+      { id: 'admin-pos', label: 'POS / New Sale', icon: '🛒' },
+      { id: 'admin-offline-sales', label: 'Offline Sales', icon: '🧾' },
+      { id: 'admin-customer-debts', label: 'Customer Debts', icon: '💳' },
+      { id: 'admin-returns', label: 'Returns', icon: '↩️' },
+    ]
+  },
+  {
+    title: 'MANAGEMENT',
+    items: [
+      { id: 'admin-catalog', labelKey: 'adminCatalog', icon: 'CB' }
+    ]
+  }
 ];
 
 export default function AdminSidebar({ currentPage, navigate }) {
@@ -34,16 +59,23 @@ export default function AdminSidebar({ currentPage, navigate }) {
 
       {/* Nav */}
       <nav className="admin-nav" aria-label="Admin sections">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-            className={`admin-nav-item ${currentPage === item.id ? 'active' : ''}`}
-            onClick={() => navigate(item.id)}
-            aria-current={currentPage === item.id ? 'page' : undefined}
-          >
-            <span className="admin-nav-icon" aria-hidden="true">{item.icon}</span>
-            {t(item.labelKey)}
-          </button>
+        {navGroups.map((group) => (
+          <div key={group.title} className="admin-nav-group">
+            <h4 className="admin-nav-group-title" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', margin: '0.5rem 0 0 0' }}>
+              {group.title}
+            </h4>
+            {group.items.map(item => (
+              <button
+                key={item.id}
+                className={`admin-nav-item ${currentPage === item.id ? 'active' : ''}`}
+                onClick={() => navigate(item.id)}
+                aria-current={currentPage === item.id ? 'page' : undefined}
+              >
+                <span className="admin-nav-icon" aria-hidden="true">{item.icon}</span>
+                {item.labelKey ? t(item.labelKey) : item.label}
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
 

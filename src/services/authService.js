@@ -1,8 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ibwurjxseiuiotlqoywa.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_4dP5FnwYcUXdC5ktJ1FtMA_yw2PfAil';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    '[EL-Gaafar Store] Missing Supabase environment variables.\n' +
+    'Copy .env.example to .env in the project root and fill in your values:\n' +
+    '  VITE_SUPABASE_URL=https://your-project-ref.supabase.co\n' +
+    '  VITE_SUPABASE_ANON_KEY=your-anon-key-here\n' +
+    'Find these in Supabase → Project Settings → API.'
+  );
+}
+
 const PROJECT_REF = (() => {
   try {
     return new URL(SUPABASE_URL).hostname.split('.')[0];
@@ -12,7 +22,7 @@ const PROJECT_REF = (() => {
 })();
 const AUTH_STORAGE_PREFIX = `sb-${PROJECT_REF}-`;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -62,6 +72,37 @@ export async function getProfileByUserId(userId) {
 
   if (error) throw error;
   return data || null;
+}
+
+export async function getCustomerProfile() {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    // .eq('auth_user_id', auth.uid()) is enforced by RLS, but we can also limit to 1
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
+}
+
+export async function signUpWithPassword({ email, password }) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+export async function registerCustomerProfile(profileData) {
+  const { data, error } = await supabase.rpc('register_customer', {
+    p_full_name: profileData.full_name || '',
+    p_phone: profileData.phone || '',
+    p_email: profileData.email || '',
+    p_city: profileData.city || '',
+    p_area: profileData.area || '',
+    p_address: profileData.address || ''
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function signInWithPassword({ email, password }) {

@@ -147,11 +147,17 @@ const SPEC_VALUE_AR = {
 
 const messages = {
   ar: {
+    home: 'الرئيسية',
     shop: 'المتجر',
-    cart: 'السلة',
     myOrders: 'طلباتي',
     admin: 'الإدارة',
     adminPanel: 'لوحة الإدارة',
+    exploreCollection: 'تصفح مجموعتنا',
+    findWhatYouLookingFor: 'اكتشف ما تبحث عنه',
+    categoriesHeroSub: 'تصفح الكتالوج الشامل لأفضل الأدوات الصحية ومستلزمات السباكة.',
+    explore: 'تصفح',
+    noCategories: 'لا توجد أقسام متاحة',
+    noCategoriesSub: 'نقوم بتحديث الكتالوج الخاص بنا، يرجى التحقق لاحقاً.',
     account: 'حسابي',
     toggleLanguage: 'English',
     goToShop: 'متجر الجعفر - الذهاب إلى المتجر',
@@ -240,8 +246,20 @@ const messages = {
     selected: 'محدد',
     codOnlyLong: 'الدفع عند الاستلام هو طريقة الدفع الوحيدة المتاحة حالياً.',
     confirmOrder: 'تأكيد الطلب',
-    orderPlacedTitle: 'تم إرسال الطلب بنجاح',
-    orderPlacedMessage: 'شكراً لك. استلمنا طلبك وسنؤكده قريباً. الدفع سيكون عند الاستلام فقط.',
+    orderPlacedTitle: 'تم تأكيد الطلب بنجاح',
+    orderPlacedMessage: 'شكراً لطلبك. لقد استلمناه وسنقوم بتأكيده قريباً. الدفع نقدًا عند الاستلام فقط.',
+    
+    // POS & Debt Terminology
+    customerDebt: 'ديون العملاء',
+    fullPayment: 'دفع كامل',
+    partialPayment: 'دفع جزئي',
+    amountPaidNow: 'المبلغ المدفوع الآن',
+    remainingBalance: 'المتبقي (دين)',
+    guestDebtError: 'لا يمكن للعميل الزائر إنشاء دين. يرجى اختيار عميل مسجل.',
+    invoiceDiscount: 'خصم الفاتورة',
+    discountApplied: 'تم تطبيق الخصم',
+    recordPayment: 'تسجيل دفعة',
+    outstandingBalance: 'الرصيد المتبقي',
     viewMyOrders: 'عرض طلباتي',
     myOrdersTitle: 'طلباتي',
     myOrdersSubtitle: 'تابع طلبات التوصيل والاستلام من متجر الجعفر',
@@ -293,6 +311,7 @@ const messages = {
     accessDeniedTitle: 'ليس لديك صلاحية الإدارة',
     accessDeniedSubtitle: 'الحساب الحالي مسجل دخول، لكنه لا يملك دور admin.',
     backToStore: 'العودة للمتجر',
+    viewStore: 'عرض المتجر',
     storeManager: 'مدير المتجر',
     search: 'بحث...',
     totalSales: 'إجمالي المبيعات',
@@ -427,15 +446,168 @@ const messages = {
     timelineReady: 'جاهز للاستلام',
     timelineDelivered: 'تم التسليم',
     timelineCancelled: 'ملغي',
+    
+    // POS Translations
+    generate: 'توليد',
+    barcode: 'باركود',
+    selectAll: 'تحديد الكل',
+    selectedCount: (count) => `تم تحديد ${count}`,
+    clearSelection: 'إلغاء التحديد',
+    bulkActions: 'إجراءات مجمعة',
+    removeSelected: 'إزالة المحدد',
+    deactivateSelected: 'إلغاء تنشيط المحدد',
+    printBarcodes: 'طباعة الباركود',
+    printNow: 'طباعة الآن',
+    totalStickers: 'إجمالي الملصقات',
+    applyToAll: 'تطبيق على الكل',
+    cancel: 'إلغاء',
+    confirm: 'تأكيد',
+    duplicateBarcode: 'باركود مكرر',
+    invalidBarcode: 'باركود غير صالح',
+    barcodeGenerated: 'تم توليد الباركود بنجاح',
+    productsDeactivated: 'تم إلغاء تنشيط المنتجات المحددة',
+    noProductsSelected: 'لم يتم تحديد أي منتجات',
+    adminOfflinePos: 'نقطة البيع (بدون إنترنت)',
+    newSale: 'بيع جديد',
+    currentSale: 'البيع الحالي',
+    heldSales: 'مبيعات معلقة',
+    salesHistory: 'سجل المبيعات',
+    clearSale: 'إلغاء البيع',
+    selectAccount: 'اختر حساب',
+    accountActions: 'إجراءات الحساب',
+    newDebt: 'دين جديد',
+    debtRecord: 'سجل دين',
+    reason: 'السبب / الوصف',
+    addDebt: 'إضافة دين',
+    discount: 'الخصم',
+    cash: 'نقدي',
+    card: 'بطاقة',
+    fawry: 'فوري',
+    amountReceived: 'المبلغ المستلم',
+    change: 'الباقي',
+    printReceipt: 'طباعة الفاتورة',
+    completeSale: 'إتمام البيع',
+    processing: 'جاري المعالجة...',
+    cashier: 'الكاشير',
+    receipt: 'الفاتورة',
+
+    // RPC Error Codes
+    ERR_INVALID_QTY: 'الكمية غير صالحة.',
+    ERR_NOT_FOUND: 'لم يتم العثور على العنصر المطلوب.',
+    ERR_NOT_AVAILABLE: 'المنتج غير متاح حالياً للبيع.',
+    ERR_INSUFFICIENT_STOCK: 'لا يوجد مخزون كافٍ لإتمام العملية.',
+    ERR_UNAUTHORIZED: 'غير مصرح لك بإجراء هذه العملية.',
+    ERR_INVALID_DISCOUNT: 'قيمة الخصم غير صالحة.',
+    ERR_INVALID_TOTAL: 'الإجمالي غير صالح.',
+    ERR_INVALID_STATUS: 'لا يمكن إتمام العملية بسبب حالة الطلب الحالية.',
+    ERR_INVALID_ADJUSTMENT: 'نوع التعديل غير صالح للكمية المدخلة.',
+    ERR_INVALID_TYPE: 'نوع العملية غير معروف.',
+    ERR_UNAUTHENTICATED: 'يجب تسجيل الدخول لإجراء هذه العملية.',
+    ERR_ALREADY_EXISTS: 'هذا الحساب مسجل مسبقاً.',
+    ERR_UNKNOWN: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+
+    // Homepage
+    everythingYouNeed: 'كل ما تحتاجه للسباكة',
+    shopProducts: 'تسوق المنتجات',
+    exploreCategories: 'تصفح الأقسام',
+    whyChooseUs: 'لماذا نحن',
+    trackYourOrder: 'تتبع طلبك',
+    visitOurStore: 'تفضل بزيارة معرضنا الرئيسي',
+    visitOurStoreDesc: 'اكتشف مجموعتنا الكاملة من مستلزمات السباكة والأدوات الصحية ومواد البناء، مع استشارة فنية واستلام فوري.',
+    openInGoogleMaps: 'الاتجاهات على الخريطة',
+    storeLocationBadge: 'الفرع الرئيسي',
+    storeHours: 'يومياً: 8:00 ص – 10:00 م',
+    storeAddressText: 'أسوان، مصر',
+    trackYourOrdersTitle: 'هل قمت بالطلب مسبقاً؟',
+    trackYourOrdersDesc: 'تابع مسار شحنتك لحظة بلحظة، أو تأكد من موعد جاهزية طلبك للاستلام الفوري من المعرض.',
+    trackOrderBtnText: 'متابعة وتتبع الطلب',
+    trackBadge: 'تتبع فوري ومباشر',
+    stepConfirmed: 'تأكيد الطلب',
+    stepPreparing: 'قيد التجهيز',
+    stepDelivered: 'جاهز / تم التوصيل',
+    shopAllProducts: 'تسوق كل المنتجات',
+    popularCategories: 'أقسام شائعة',
+    getDirections: 'احصل على الاتجاهات',
+    alreadyPlacedOrder: 'هل قمت بطلب مسبقاً؟',
+    qualityProducts: 'منتجات عالية الجودة',
+    competitivePrices: 'أسعار تنافسية',
+    featuredProductsTitle: 'أبرز المنتجات',
+    storeLocationInfo: 'مقرنا في قلب السوق لخدمتكم بشكل أسرع.',
+
+    // Contact Us Page
+    contactUs: 'تواصل معنا',
+    contactUsTitle: 'تواصل معنا',
+    contactUsSubtitle: 'نحن هنا لمساعدتكم وخدمتكم دائماً. تفضل بزيارة معرض شركة الجعفر للأدوات الصحية في أسوان أو تواصل معنا مباشرة لأي استفسار أو طلب عرض أسعار.',
+    getInTouch: 'أرسل لنا رسالة',
+    getInTouchDesc: 'املأ النموذج وسيقوم فريق خدمة العملاء بالتواصل معك خلال وقت قصير.',
+    showroomLocation: 'معرضنا في أسوان',
+    showroomAddress: 'شركة الجعفر للأدوات الصحية، أسوان، مصر',
+    chatOnWhatsapp: 'محادثة عبر واتساب',
+    whatsappFastReply: 'رد فوري خلال دقائق',
+    callUs: 'الاتصال المباشر',
+    customerSupportLine: 'خدمة العملاء والمبيعات',
+    workingHoursTitle: 'ساعات العمل',
+    dailyHours: 'يومياً: 8:00 ص – 10:00 م',
+    openNow: 'مفتوح الآن',
+    yourName: 'الاسم بالكامل',
+    yourPhone: 'رقم الهاتف / واتساب',
+    yourEmail: 'البريد الإلكتروني (اختياري)',
+    inquiryType: 'نوع الاستفسار',
+    inquiryGeneral: 'استفسار عام عن منتج',
+    inquiryWholesale: 'طلب عرض أسعار / جملة ومقاولات',
+    inquiryOrder: 'متابعة شحنة أو طلب',
+    inquiryMaintenance: 'استشارة فنية أو صيانة',
+    inquiryOther: 'أخرى',
+    yourMessage: 'اكتب رسالتك أو تفاصيل استفسارك هنا...',
+    sendMessage: 'إرسال الرسالة',
+    sendViaWhatsapp: 'إرسال عبر واتساب مباشرة',
+    messageSentSuccess: 'تم إرسال رسالتك بنجاح!',
+    messageSentDesc: 'شكراً لتواصلك معنا. سنقوم بالرد عليك في أقرب وقت ممكن.',
+    faqTitle: 'الأسئلة الأكثر شيوعاً',
+    faqSubtitle: 'إجابات سريعة على التساؤلات الأكثر تكراراً من عملائنا في أسوان',
+    faq1Q: 'هل يتوفر توصيل داخل مدينة أسوان والمناطق المجاورة؟',
+    faq1A: 'نعم، نوفر خدمة توصيل سريعة لجميع أنحاء أسوان مع إمكانية المعاينة قبل الدفع.',
+    faq2Q: 'هل يمكنني الاستلام المباشر من المعرض؟',
+    faq2A: 'بالتأكيد! يمكنك اختيار الاستلام من المعرض عند إتمام الطلب، وسنجهز طلبك للاستلام الفوري بدون أي رسوم شحن.',
+    faq3Q: 'ما هي طرق الدفع المتاحة؟',
+    faq3A: 'الدفع نقدًا عند الاستلام (كاش) بعد استلام وفحص المنتجات، سواء بالتوصيل أو بالمعرض.',
+    faq4Q: 'هل توفرون خصومات وعروض أسعار خاصة للمقاولين والفنيين؟',
+    faq4A: 'نعم، لدينا أسعار خاصة لطلبات الجملة والمشروعات والفنيين. يمكنك التواصل معنا عبر واتساب أو الهاتف للحصول على عرض أسعار فوري.',
   },
   en: {},
 };
 
 messages.en = {
+  home: 'Home',
   shop: 'Shop',
-  cart: 'Cart',
   myOrders: 'My Orders',
   admin: 'Admin',
+  generate: 'Generate',
+  exploreCollection: 'EXPLORE OUR COLLECTION',
+  findWhatYouLookingFor: 'Find What You’re Looking For',
+  categoriesHeroSub: 'Browse through our extensive catalog of high-quality plumbing and sanitary supplies.',
+  explore: 'Explore',
+  noCategories: 'No Categories Available',
+  noCategoriesSub: 'We are currently updating our catalog. Please check back soon.',
+  barcode: 'Barcode',
+  selectAll: 'Select All',
+  selectedCount: (count) => `${count} Selected`,
+  clearSelection: 'Clear Selection',
+  bulkActions: 'Bulk Actions',
+  removeSelected: 'Remove Selected',
+  deactivateSelected: 'Deactivate Selected',
+  printBarcodes: 'Print Barcodes',
+  printNow: 'Print Now',
+  totalStickers: 'Total Stickers',
+  applyToAll: 'Apply to all',
+  cancel: 'Cancel',
+  confirm: 'Confirm',
+  duplicateBarcode: 'Duplicate Barcode',
+  invalidBarcode: 'Invalid Barcode',
+  barcodeGenerated: 'Barcode Generated',
+  productsDeactivated: 'Selected products deactivated',
+  noProductsSelected: 'No products selected',
+  adminOfflinePos: 'POS Offline System',
   adminPanel: 'Admin Panel',
   account: 'My account',
   toggleLanguage: 'العربية',
@@ -527,6 +699,18 @@ messages.en = {
   confirmOrder: 'Confirm Order',
   orderPlacedTitle: 'Order Placed Successfully',
   orderPlacedMessage: 'Thank you for your order. We have received it and will confirm it shortly. Payment will be collected by Cash on Delivery only.',
+  
+  // POS & Debt Terminology
+  customerDebt: 'Customer Debt',
+  fullPayment: 'Full Payment',
+  partialPayment: 'Partial Payment',
+  amountPaidNow: 'Amount Paid Now',
+  remainingBalance: 'Remaining (Debt)',
+  guestDebtError: 'Guest customers cannot create debt. Please select a registered customer.',
+  invoiceDiscount: 'Invoice Discount',
+  discountApplied: 'Discount Applied',
+  recordPayment: 'Record Payment',
+  outstandingBalance: 'Outstanding Balance',
   viewMyOrders: 'View My Orders',
   myOrdersTitle: 'My Orders',
   myOrdersSubtitle: 'Track delivery and pickup orders from Al-Jafar Store',
@@ -578,6 +762,7 @@ messages.en = {
   accessDeniedTitle: 'Admin Access Denied',
   accessDeniedSubtitle: 'You are signed in, but your account does not have the admin role.',
   backToStore: 'Back to Store',
+  viewStore: 'View Store',
   storeManager: 'Store Manager',
   search: 'Search...',
   totalSales: 'Total Sales',
@@ -712,6 +897,108 @@ messages.en = {
   timelineReady: 'Ready for Pickup',
   timelineDelivered: 'Delivered',
   timelineCancelled: 'Cancelled',
+  
+  // POS Translations
+  pos: 'Point of Sale',
+  newSale: 'New Sale',
+  currentSale: 'Current Sale',
+  heldSales: 'Held Sales',
+  salesHistory: 'Sales History',
+  clearSale: 'Clear Sale',
+  discount: 'Discount',
+  cash: 'Cash',
+  card: 'Card',
+  fawry: 'Fawry',
+  amountReceived: 'Amount Received',
+  change: 'Change',
+  printReceipt: 'Print Receipt',
+  completeSale: 'Complete Sale',
+  processing: 'Processing...',
+  cashier: 'Cashier',
+  receipt: 'Receipt',
+
+  // RPC Error Codes
+  ERR_INVALID_QTY: 'Invalid quantity.',
+  ERR_NOT_FOUND: 'The requested item was not found.',
+  ERR_NOT_AVAILABLE: 'This product is currently not available for sale.',
+  ERR_INSUFFICIENT_STOCK: 'Insufficient stock to complete the operation.',
+  ERR_UNAUTHORIZED: 'You are not authorized to perform this operation.',
+  ERR_INVALID_DISCOUNT: 'Invalid discount amount.',
+  ERR_INVALID_TOTAL: 'Invalid total amount.',
+  ERR_INVALID_STATUS: 'Cannot complete operation due to current status.',
+  ERR_INVALID_ADJUSTMENT: 'Invalid adjustment type for the given quantity.',
+  ERR_INVALID_TYPE: 'Unknown transaction type.',
+  ERR_UNAUTHENTICATED: 'You must be logged in to perform this operation.',
+  ERR_ALREADY_EXISTS: 'This profile is already registered.',
+  ERR_UNKNOWN: 'An unexpected error occurred. Please try again.',
+
+  // Homepage
+  everythingYouNeed: 'Everything You Need for Plumbing',
+  shopProducts: 'Shop Products',
+  exploreCategories: 'Explore Categories',
+  whyChooseUs: 'Why Choose Us',
+  trackYourOrder: 'Track Your Order',
+  visitOurStore: 'Visit Our Main Showroom',
+  visitOurStoreDesc: 'Explore our full range of plumbing supplies, valves, and fixtures in person. Get expert guidance and instant pickup.',
+  openInGoogleMaps: 'Open in Google Maps',
+  storeLocationBadge: 'Main Showroom',
+  storeHours: 'Daily: 8:00 AM – 10:00 PM',
+  storeAddressText: 'Aswan, Egypt',
+  trackYourOrdersTitle: 'Already Placed an Order?',
+  trackYourOrdersDesc: 'Track your shipment status in real-time or check when your order is ready for in-store pickup.',
+  trackOrderBtnText: 'Track Your Order',
+  trackBadge: 'Live Order Tracking',
+  stepConfirmed: 'Confirmed',
+  stepPreparing: 'Preparing',
+  stepDelivered: 'Ready / Delivered',
+  shopAllProducts: 'Shop All Products',
+  popularCategories: 'Popular Categories',
+  getDirections: 'Get Directions',
+  alreadyPlacedOrder: 'Already placed an order?',
+  qualityProducts: 'Quality Products',
+  competitivePrices: 'Competitive Prices',
+  featuredProductsTitle: 'Featured Products',
+  storeLocationInfo: 'Located in the heart of the market to serve you faster.',
+
+  // Contact Us Page
+  contactUs: 'Contact Us',
+  contactUsTitle: 'Contact Us',
+  contactUsSubtitle: 'We are here to help! Visit our showroom in Aswan or get in touch directly for product inquiries and quotations.',
+  getInTouch: 'Send Us a Message',
+  getInTouchDesc: 'Fill out the form below and our team will get back to you promptly.',
+  showroomLocation: 'Aswan Showroom',
+  showroomAddress: 'Al-Jafar Sanitary Ware Co., Aswan, Egypt',
+  chatOnWhatsapp: 'Chat on WhatsApp',
+  whatsappFastReply: 'Quick reply within minutes',
+  callUs: 'Direct Call',
+  customerSupportLine: 'Customer Service & Sales',
+  workingHoursTitle: 'Working Hours',
+  dailyHours: 'Daily: 8:00 AM – 10:00 PM',
+  openNow: 'Open Now',
+  yourName: 'Full Name',
+  yourPhone: 'Phone / WhatsApp',
+  yourEmail: 'Email Address (Optional)',
+  inquiryType: 'Inquiry Type',
+  inquiryGeneral: 'General Product Inquiry',
+  inquiryWholesale: 'Contractor & Wholesale Quotation',
+  inquiryOrder: 'Order Tracking & Delivery',
+  inquiryMaintenance: 'Technical Advice & Specs',
+  inquiryOther: 'Other',
+  yourMessage: 'Write your message or inquiry details here...',
+  sendMessage: 'Send Message',
+  sendViaWhatsapp: 'Send via WhatsApp',
+  messageSentSuccess: 'Message sent successfully!',
+  messageSentDesc: 'Thank you for reaching out. Our team will contact you shortly.',
+  faqTitle: 'Frequently Asked Questions',
+  faqSubtitle: 'Quick answers to common questions from our customers in Aswan',
+  faq1Q: 'Do you deliver within Aswan and surrounding areas?',
+  faq1A: 'Yes, we provide fast delivery across Aswan with payment upon inspection.',
+  faq2Q: 'Can I pick up my order directly from the showroom?',
+  faq2A: 'Yes! Choose store pickup at checkout, and your order will be prepared for immediate free collection.',
+  faq3Q: 'What payment methods are supported?',
+  faq3A: 'Cash on Delivery (COD) is available for all orders upon receipt and inspection.',
+  faq4Q: 'Do you offer special prices for contractors and plumbing technicians?',
+  faq4A: 'Yes, we offer competitive wholesale prices for bulk orders and contractors. Contact us via WhatsApp for instant quotation.',
 };
 
 const LocalizationContext = createContext(null);
@@ -782,6 +1069,42 @@ export function LocalizationProvider({ children }) {
       return key ? t(key) : step;
     };
 
+    const parseRpcError = (error) => {
+      if (!error || !error.message) return t('ERR_UNKNOWN');
+      
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed && parsed.code) {
+          // If we have a translation for this code, use it.
+          // Fallback to the message from the server if no translation.
+          const translated = t(parsed.code);
+          if (translated !== parsed.code) {
+            // Include details if it's an insufficient stock error for a specific product
+            if (parsed.code === 'ERR_INSUFFICIENT_STOCK' && parsed.details?.productName) {
+              return isArabic 
+                ? `لا يوجد مخزون كافٍ لمنتج: ${parsed.details.productName} (المطلوب: ${parsed.details.requested}، المتاح: ${parsed.details.available})`
+                : `Insufficient stock for: ${parsed.details.productName} (Requested: ${parsed.details.requested}, Available: ${parsed.details.available})`;
+            }
+            if (parsed.code === 'ERR_NOT_AVAILABLE' && parsed.details?.productName) {
+              return isArabic
+                ? `المنتج غير متاح للبيع: ${parsed.details.productName}`
+                : `Product not available for sale: ${parsed.details.productName}`;
+            }
+            return translated;
+          }
+          return parsed.message || t('ERR_UNKNOWN');
+        }
+      } catch {
+        // Not a JSON error, handle legacy string errors if needed
+        const msg = error.message.toLowerCase();
+        if (msg.includes('insufficient stock')) return t('ERR_INSUFFICIENT_STOCK');
+        if (msg.includes('not available')) return t('ERR_NOT_AVAILABLE');
+        if (msg.includes('not found')) return t('ERR_NOT_FOUND');
+      }
+      
+      return error.message;
+    };
+
     return {
       language,
       dir: isArabic ? 'rtl' : 'ltr',
@@ -800,6 +1123,7 @@ export function LocalizationProvider({ children }) {
       productDescription,
       customerStatus,
       timelineStep,
+      parseRpcError,
     };
   }, [language]);
 

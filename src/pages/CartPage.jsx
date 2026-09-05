@@ -88,6 +88,12 @@ export default function CartPage({ cartItems, onUpdateQty, onRemove, navigate })
                             value={item.qty}
                             onChange={(qty) => onUpdateQty(item.product.id, qty)}
                             max={item.product.stock}
+                            onLimitReached={(maxVal) => {
+                              const msg = isArabic 
+                                ? `الحد الأقصى المتاح هو ${maxVal}. إذا كنت بحاجة إلى المزيد، يرجى التواصل معنا عبر واتساب لترتيب ذلك.`
+                                : `The maximum you can get is ${maxVal}. If you need more, please contact us on WhatsApp to arrange it.`;
+                              window.alert(msg);
+                            }}
                           />
                         </td>
                         <td>

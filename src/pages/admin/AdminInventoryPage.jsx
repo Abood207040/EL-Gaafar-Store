@@ -6,7 +6,7 @@ import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
 import { listAdminProducts } from '../../services/productsService.js';
 
-const LOW_STOCK_THRESHOLD = 20;
+// Removed hardcoded LOW_STOCK_THRESHOLD
 
 export default function AdminInventoryPage() {
   const { categories } = useCatalogOptions();
@@ -40,10 +40,7 @@ export default function AdminInventoryPage() {
     };
   }, [t]);
 
-  const inventoryItems = useMemo(
-    () => items.map((item) => ({ ...item, lowStockThreshold: LOW_STOCK_THRESHOLD })),
-    [items]
-  );
+  const inventoryItems = items;
 
   const alerts = useMemo(
     () =>
@@ -56,7 +53,12 @@ export default function AdminInventoryPage() {
   );
 
   const totalInventoryValue = useMemo(
-    () => inventoryItems.reduce((sum, item) => sum + item.price * item.stock, 0),
+    () => inventoryItems.reduce((sum, item) => sum + (item.cost !== null ? item.cost * item.stock : 0), 0),
+    [inventoryItems]
+  );
+
+  const uncostedItemsCount = useMemo(
+    () => inventoryItems.filter(item => item.cost === null).length,
     [inventoryItems]
   );
 
@@ -93,6 +95,11 @@ export default function AdminInventoryPage() {
           <span className="stat-mini-value">
             EGP {totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </span>
+          {uncostedItemsCount > 0 && (
+            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginTop: '0.25rem' }}>
+              *Excludes {uncostedItemsCount} uncosted items
+            </span>
+          )}
         </div>
       </div>
 
@@ -174,7 +181,8 @@ export default function AdminInventoryPage() {
                 <th>{t('productName')}</th>
                 <th>{t('category')}</th>
                 <th>{t('stock')}</th>
-                <th>{t('lowStockThreshold')}</th>
+                <th>Online</th>
+                <th>Offline</th>
                 <th>{t('status')}</th>
               </tr>
             </thead>
@@ -221,7 +229,7 @@ export default function AdminInventoryPage() {
                           color:
                             item.stock === 0
                               ? 'var(--danger)'
-                              : item.stock < LOW_STOCK_THRESHOLD
+                              : item.stock <= item.lowStockThreshold
                                 ? 'var(--warning)'
                                 : 'var(--success)',
                         }}
@@ -229,7 +237,16 @@ export default function AdminInventoryPage() {
                         {item.stock}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--muted)' }}>{item.lowStockThreshold}</td>
+                    <td>
+                      <span className={`badge ${item.availableOnline ? 'badge-success' : 'badge-dark'}`}>
+                        {item.availableOnline ? 'YES' : 'NO'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${item.availableOffline ? 'badge-success' : 'badge-dark'}`}>
+                        {item.availableOffline ? 'YES' : 'NO'}
+                      </span>
+                    </td>
                     <td><StockBadge status={item.stockStatus} /></td>
                   </tr>
                 ))

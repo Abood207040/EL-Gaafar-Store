@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
-import { createAdminProduct, updateAdminProduct } from '../../services/productsService.js';
+import { createAdminProduct, updateAdminProduct, adjustProductStock, getAdminProductById } from '../../services/productsService.js';
 import { uploadProductImage } from '../../services/storageService.js';
+import { useParams } from 'react-router-dom';
 
 function mapUiFormToProductPayload(form, flags) {
   return {
@@ -13,6 +14,9 @@ function mapUiFormToProductPayload(form, flags) {
     category: form.category,
     brand: form.brand,
     price: form.price,
+    cost: form.cost,
+    barcode: form.barcode,
+    lowStockThreshold: form.lowStockThreshold,
     stock: form.stock,
     sku: form.sku.trim(),
     image: form.imageUrl.trim(),
@@ -30,16 +34,40 @@ function mapUiFormToProductPayload(form, flags) {
     },
     featured: Boolean(flags.featured),
     active: flags.active !== false,
+    availableOnline: flags.availableOnline !== false,
+    availableOffline: flags.availableOffline !== false,
   };
 }
 
-export default function AdminProductFormPage({ navigate, product }) {
-  const { t } = useLocalization();
+export default function AdminProductFormPage({ navigate, product: propProduct }) {
+  const { id } = useParams();
+  const { t, parseRpcError } = useLocalization();
+  const [product, setProduct] = useState(propProduct || null);
   const { categories, brands, addCategory, addBrand } = useCatalogOptions();
+
+  const productId = id || propProduct?.id;
+
+  useEffect(() => {
+    if (productId && !propProduct) {
+      let ignore = false;
+      const fetchProduct = async () => {
+        try {
+          const data = await getAdminProductById(productId);
+          if (!ignore) setProduct(data);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      fetchProduct();
+      return () => { ignore = true; };
+    }
+  }, [productId, propProduct]);
 
   const isEditMode = Boolean(product?.id);
   const [active, setActive] = useState(product?.active !== false);
   const [featured, setFeatured] = useState(Boolean(product?.featured));
+  const [availableOnline, setAvailableOnline] = useState(product?.availableOnline !== false);
+  const [availableOffline, setAvailableOffline] = useState(product?.availableOffline !== false);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -52,6 +80,14 @@ export default function AdminProductFormPage({ navigate, product }) {
   const [newBrandEn, setNewBrandEn] = useState('');
   const [newBrandAr, setNewBrandAr] = useState('');
 
+  // Stock Adjustment Modal State
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [adjType, setAdjType] = useState('restock');
+  const [adjQty, setAdjQty] = useState('');
+  const [adjNotes, setAdjNotes] = useState('');
+  const [adjSaving, setAdjSaving] = useState(false);
+  const [adjError, setAdjError] = useState('');
+
   const [form, setForm] = useState({
     nameEn: product?.nameEn || '',
     nameAr: product?.nameAr || '',
@@ -61,6 +97,9 @@ export default function AdminProductFormPage({ navigate, product }) {
     categoryId: product?.categoryId || '',
     brand: product?.brand || '',
     price: product?.price ?? '',
+    cost: product?.cost ?? '',
+    barcode: product?.barcode || '',
+    lowStockThreshold: product?.lowStockThreshold ?? 5,
     stock: product?.stock ?? '',
     sku: product?.sku || '',
     imageUrl: product?.image || '',
@@ -76,6 +115,7 @@ export default function AdminProductFormPage({ navigate, product }) {
 
   useEffect(() => {
     if (!imageFile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setImagePreviewUrl('');
       return undefined;
     }
@@ -88,6 +128,11 @@ export default function AdminProductFormPage({ navigate, product }) {
     const cat = form.category ? form.category.slice(0, 3).toUpperCase() : 'GEN';
     const rand = Math.floor(Math.random() * 900 + 100);
     setForm((prev) => ({ ...prev, sku: `AJ-${cat}-${rand}` }));
+  };
+
+  const generateBarcode = () => {
+    const num = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    setForm((prev) => ({ ...prev, barcode: num }));
   };
 
   const addCategoryFromForm = async () => {
@@ -162,7 +207,7 @@ export default function AdminProductFormPage({ navigate, product }) {
 
       const payload = mapUiFormToProductPayload(
         { ...form, imageUrl: nextImageUrl },
-        { featured, active }
+        { featured, active, availableOnline, availableOffline }
       );
 
       if (isEditMode) {
@@ -180,6 +225,36 @@ export default function AdminProductFormPage({ navigate, product }) {
     } finally {
       setSaving(false);
       setUploadingImage(false);
+    }
+  };
+
+  const handleAdjustStock = async () => {
+    setAdjError('');
+    if (!adjQty) return;
+    
+    let change = Number(adjQty);
+    if (adjType === 'damage' || adjType === 'loss') {
+      if (change > 0) change = -change; // force negative
+    } else if (adjType === 'restock') {
+      if (change < 0) change = -change; // force positive
+    }
+
+    if (change === 0) {
+      setAdjError('Quantity change cannot be zero.');
+      return;
+    }
+
+    setAdjSaving(true);
+    try {
+      const newStock = await adjustProductStock(product.id, change, adjType, adjNotes);
+      setForm(prev => ({ ...prev, stock: newStock }));
+      setShowStockModal(false);
+      setAdjQty('');
+      setAdjNotes('');
+    } catch (err) {
+      setAdjError(parseRpcError(err));
+    } finally {
+      setAdjSaving(false);
     }
   };
 
@@ -267,9 +342,24 @@ export default function AdminProductFormPage({ navigate, product }) {
                   <input id="price" className="input" type="number" min="0" step="0.01" placeholder="0.00" value={form.price} onChange={set('price')} required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="stock" className="form-label">{t('inventoryCount')} <span aria-hidden="true">*</span></label>
-                  <input id="stock" className="input" type="number" min="0" placeholder="0" value={form.stock} onChange={set('stock')} required />
+                  <label htmlFor="cost" className="form-label">Cost <span className="form-hint-inline">(optional)</span></label>
+                  <input id="cost" className="input" type="number" min="0" step="0.01" placeholder="0.00" value={form.cost} onChange={set('cost')} />
                 </div>
+                <div className="form-group">
+                  <label htmlFor="stock" className="form-label">{t('inventoryCount')} <span aria-hidden="true">*</span></label>
+                  {isEditMode ? (
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', height: '42px' }}>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{form.stock}</span>
+                      <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowStockModal(true)}>
+                        Adjust
+                      </button>
+                    </div>
+                  ) : (
+                    <input id="stock" className="input" type="number" min="0" placeholder="0" value={form.stock} onChange={set('stock')} required />
+                  )}
+                </div>
+              </div>
+              <div className="form-row form-row-3" style={{ marginTop: '1rem' }}>
                 <div className="form-group">
                   <label htmlFor="sku" className="form-label">SKU</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -278,6 +368,19 @@ export default function AdminProductFormPage({ navigate, product }) {
                       Auto
                     </button>
                   </div>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="barcode" className="form-label">{t('barcode') || 'Barcode'} <span className="form-hint-inline">({t('optional')})</span></label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input id="barcode" className="input" placeholder="Scan or enter barcode" value={form.barcode} onChange={set('barcode')} />
+                    <button type="button" className="btn btn-outline btn-sm" onClick={generateBarcode} style={{ flexShrink: 0 }}>
+                      {t('generate') || 'Generate'}
+                    </button>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="lowStockThreshold" className="form-label">Low Stock Threshold</label>
+                  <input id="lowStockThreshold" className="input" type="number" min="0" placeholder="5" value={form.lowStockThreshold} onChange={set('lowStockThreshold')} required />
                 </div>
               </div>
             </div>
@@ -401,6 +504,28 @@ export default function AdminProductFormPage({ navigate, product }) {
                   <span className="toggle-slider" />
                 </label>
               </div>
+              <hr className="divider" />
+              <div className="toggle-group">
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Available Online</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>Show on website & app</p>
+                </div>
+                <label className="toggle" aria-label="Available Online toggle">
+                  <input type="checkbox" checked={availableOnline} onChange={(event) => setAvailableOnline(event.target.checked)} />
+                  <span className="toggle-slider" />
+                </label>
+              </div>
+              <hr className="divider" />
+              <div className="toggle-group">
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Available Offline</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>Show in POS</p>
+                </div>
+                <label className="toggle" aria-label="Available Offline toggle">
+                  <input type="checkbox" checked={availableOffline} onChange={(event) => setAvailableOffline(event.target.checked)} />
+                  <span className="toggle-slider" />
+                </label>
+              </div>
             </div>
           </div>
 
@@ -419,6 +544,52 @@ export default function AdminProductFormPage({ navigate, product }) {
           </div>
         </div>
       </div>
+
+      {showStockModal && (
+        <div className="modal-overlay" onClick={() => !adjSaving && setShowStockModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3>Adjust Stock</h3>
+              <button className="btn-close" onClick={() => !adjSaving && setShowStockModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Current Stock: <span style={{ fontWeight: 600 }}>{form.stock}</span></label>
+              </div>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Transaction Type</label>
+                <select className="select" value={adjType} onChange={(e) => setAdjType(e.target.value)}>
+                  <option value="restock">Restock (+)</option>
+                  <option value="damage">Damage (-)</option>
+                  <option value="loss">Loss (-)</option>
+                  <option value="manual_adjustment">Manual Adjustment (+/-)</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Quantity</label>
+                <input 
+                  type="number" 
+                  className="input" 
+                  placeholder={adjType === 'restock' ? '+50' : adjType === 'damage' || adjType === 'loss' ? '-5' : '10 or -10'} 
+                  value={adjQty} 
+                  onChange={(e) => setAdjQty(e.target.value)} 
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Notes</label>
+                <input type="text" className="input" placeholder="Reason for adjustment" value={adjNotes} onChange={(e) => setAdjNotes(e.target.value)} />
+              </div>
+              {adjError && <p style={{ color: 'var(--danger)', fontSize: '0.8125rem', marginBottom: '1rem' }}>{adjError}</p>}
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" onClick={() => setShowStockModal(false)} disabled={adjSaving}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleAdjustStock} disabled={adjSaving || !adjQty}>
+                {adjSaving ? 'Applying...' : 'Apply Adjustment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -73,10 +73,11 @@ export default function useCatalogOptions() {
   const refreshCategories = useCallback(async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('id, name_en, name_ar, slug, is_active')
+      .select('id, name_en, name_ar, slug, image_url, is_active')
       .eq('is_active', true)
       .order('name_en', { ascending: true });
     if (error) {
+      console.error('Supabase categories fetch error:', error);
       setCategoriesTableAvailable(false);
       setCategoryRows([]);
       return;
@@ -108,7 +109,9 @@ export default function useCatalogOptions() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshCategories().catch(() => {});
+     
     refreshBrands().catch(() => {});
   }, [refreshCategories, refreshBrands]);
 
@@ -147,6 +150,7 @@ export default function useCatalogOptions() {
     async (value) => {
       const nameEn = normalize(value?.nameEn);
       const nameAr = normalize(value?.nameAr);
+      const imageUrl = value?.imageUrl || null;
 
       if (!categoriesTableAvailable) {
         throw new Error('Categories table is missing or inaccessible in Supabase.');
@@ -171,6 +175,7 @@ export default function useCatalogOptions() {
           name_en: nameEn,
           name_ar: nameAr,
           slug,
+          image_url: imageUrl,
           is_active: true,
         });
       if (error) throw error;
@@ -267,6 +272,21 @@ export default function useCatalogOptions() {
     [brandRows, brandsTableAvailable, refreshBrands]
   );
 
+  const updateCategoryImage = useCallback(
+    async (categoryId, imageUrl) => {
+      if (!categoriesTableAvailable) {
+        throw new Error('Categories table is missing or inaccessible in Supabase.');
+      }
+      const { error } = await supabase
+        .from('categories')
+        .update({ image_url: imageUrl })
+        .eq('id', categoryId);
+      if (error) throw error;
+      await refreshCategories();
+    },
+    [categoriesTableAvailable, refreshCategories]
+  );
+
   return {
     categories,
     brands,
@@ -279,5 +299,7 @@ export default function useCatalogOptions() {
     addBrand,
     removeCategory,
     removeBrand,
+    updateCategoryImage,
+    categoryObjects: categoryRows,
   };
 }

@@ -35,6 +35,7 @@ export default function AdminOrdersPage({ navigate }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

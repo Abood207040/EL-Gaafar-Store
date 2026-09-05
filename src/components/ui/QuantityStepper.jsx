@@ -6,10 +6,17 @@ export default function QuantityStepper({
   onChange,
   min = 1,
   max = 999,
+  onLimitReached
 }) {
   const { t } = useLocalization();
   const dec = () => { if (value > min) onChange(value - 1); };
-  const inc = () => { if (value < max) onChange(value + 1); };
+  const inc = () => {
+    if (value < max) {
+      onChange(value + 1);
+    } else if (onLimitReached) {
+      onLimitReached(max);
+    }
+  };
 
   return (
     <div className="qty-stepper" aria-label={t('quantitySelector')}>
@@ -27,8 +34,9 @@ export default function QuantityStepper({
         type="button"
         className="qty-btn"
         onClick={inc}
-        disabled={value >= max}
+        disabled={value >= max && !onLimitReached}
         aria-label={t('increaseQuantity')}
+        style={value >= max && !onLimitReached ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
       >
         +
       </button>

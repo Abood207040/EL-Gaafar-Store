@@ -1,10 +1,9 @@
 import placeholderImg from '../assets/main-image.png';
 import { FULFILLMENT, ORDER_STATUSES, PAYMENT_METHODS } from '../constants/domain.js';
 import { supabase } from './authService.js';
+import { baseOrderSelect } from './orderUtils.js';
 
-const CUSTOMERS_TABLE = 'customers';
 const ORDERS_TABLE = 'orders';
-const ORDER_ITEMS_TABLE = 'order_items';
 
 function mapOrderStatusTimeline(status, fulfillment, createdAt) {
   const stamp = createdAt ? new Date(createdAt).toISOString().slice(0, 10) : '';
@@ -95,161 +94,67 @@ export function normalizeOrder(row) {
   };
 }
 
-function baseOrderSelect() {
-  return `
-    id,
-    customer_id,
-    order_number,
-    customer_name,
-    customer_phone,
-    customer_email,
-    fulfillment_type,
-    status,
-    city,
-    area,
-    street_address,
-    notes,
-    subtotal,
-    logistics_fee,
-    tax,
-    total,
-    payment_method,
-    created_at,
-    customers:customer_id (
-      id,
-      full_name,
-      phone,
-      email
-    ),
-    order_items (
-      id,
-      order_id,
-      product_id,
-      product_name,
-      sku,
-      qty,
-      unit_price,
-      line_total,
-      created_at
-    )
-  `;
-}
-
-async function findOrCreateCustomer(customer) {
-  const email = customer.email?.trim() || null;
-  const phone = customer.phone?.trim() || null;
-
-  if (!phone && !email) {
-    throw new Error('Customer phone or email is required.');
-  }
-
-  let query = supabase
-    .from(CUSTOMERS_TABLE)
-    .select('*');
-
-  if (phone && email) {
-    query = query.or(`phone.eq.${phone},email.eq.${email}`);
-  } else if (phone) {
-    query = query.eq('phone', phone);
-  } else {
-    query = query.eq('email', email);
-  }
-
-  const { data: existing, error: findError } = await query.limit(1).maybeSingle();
-  if (findError) throw findError;
-  if (existing) return existing;
-
-  const insertPayload = {
-    full_name: customer.fullName?.trim() || '',
-    phone,
-    email,
-    city: customer.city?.trim() || '',
-    area: customer.area?.trim() || '',
-    address: customer.address?.trim() || '',
-  };
-
-  const { data: created, error: createError } = await supabase
-    .from(CUSTOMERS_TABLE)
-    .insert(insertPayload)
-    .select('*')
-    .single();
-
-  if (createError) throw createError;
-  return created;
-}
-
-function buildOrderNumber() {
-  const now = new Date();
-  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-  const rand = String(Math.floor(Math.random() * 9000) + 1000);
-  return `AJ-${datePart}-${rand}`;
-}
 
 export async function createOrder(orderPayload, cartItems) {
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     throw new Error('Cart is empty.');
   }
 
-  const customer = await findOrCreateCustomer(orderPayload.customer || {});
-
-  const orderInsert = {
-    customer_id: customer.id,
-    order_number: buildOrderNumber(),
-    customer_name: orderPayload.customer?.fullName?.trim() || customer.full_name || '',
-    customer_phone: orderPayload.customer?.phone?.trim() || customer.phone || '',
-    customer_email: orderPayload.customer?.email?.trim() || customer.email || '',
-    fulfillment_type: orderPayload.fulfillmentType || FULFILLMENT.DELIVERY,
-    status: ORDER_STATUSES.PENDING,
-    city: orderPayload.city || null,
-    area: orderPayload.area || null,
-    street_address: orderPayload.streetAddress || null,
-    notes: orderPayload.notes || null,
-    subtotal: Number(orderPayload.subtotal || 0),
-    logistics_fee: Number(orderPayload.logisticsFee || 0),
-    tax: Number(orderPayload.tax || 0),
-    total: Number(orderPayload.total || 0),
-    payment_method: PAYMENT_METHODS.COD,
-  };
-
-  const { data: createdOrder, error: orderError } = await supabase
-    .from(ORDERS_TABLE)
-    .insert(orderInsert)
-    .select(baseOrderSelect())
-    .single();
-
-  if (orderError) throw orderError;
-
-  const orderItemsInsert = cartItems.map((item) => ({
-    order_id: createdOrder.id,
+  const items = cartItems.map((item) => ({
     product_id: item.product.id,
-    product_name: item.product.nameEn || item.product.nameAr || '',
-    sku: item.product.sku || '',
     qty: Number(item.qty || 0),
-    unit_price: Number(item.product.price || 0),
-    line_total: Number((item.qty || 0) * (item.product.price || 0)),
   }));
 
-  const { error: itemsError } = await supabase
-    .from(ORDER_ITEMS_TABLE)
-    .insert(orderItemsInsert);
+  const payload = {
+    p_items: items,
+    p_customer_name: orderPayload.customer?.fullName?.trim() || '',
+    p_customer_phone: orderPayload.customer?.phone?.trim() || '',
+    p_customer_email: orderPayload.customer?.email?.trim() || null,
+    p_fulfillment_type: orderPayload.fulfillmentType || FULFILLMENT.DELIVERY,
+    p_city: orderPayload.city || null,
+    p_area: orderPayload.area || null,
+    p_street_address: orderPayload.streetAddress || null,
+    p_notes: orderPayload.notes || null,
+    p_customer_id: orderPayload.customer?.id || null,
+  };
 
-  if (itemsError) throw itemsError;
+  const { data: newOrderId, error } = await supabase.rpc('create_online_order', payload);
 
-  const fresh = await getOrderById(createdOrder.id);
+  if (error) {
+    console.error('RPC Checkout Error:', error);
+    throw new Error(error.message || 'Failed to complete secure checkout.');
+  }
+
+  const fresh = await getOrderById(newOrderId);
   return fresh;
 }
 
-export async function getCustomerOrders(phoneOrEmail) {
-  const value = String(phoneOrEmail || '').trim();
-  if (!value) return [];
+export async function trackOrder(orderNumber, phoneOrEmail) {
+  const num = String(orderNumber || '').trim();
+  const contact = String(phoneOrEmail || '').trim();
+  
+  if (!num || !contact) return null;
 
-  const query = value.includes('@')
-    ? supabase.from(ORDERS_TABLE).select(baseOrderSelect()).eq('customer_email', value)
-    : supabase.from(ORDERS_TABLE).select(baseOrderSelect()).eq('customer_phone', value);
+  const { data, error } = await supabase.rpc('track_online_order', {
+    p_order_number: num,
+    p_contact: contact
+  });
 
-  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
-  return (data || []).map(normalizeOrder);
+  return data ? normalizeOrder(data) : null;
+}
+
+export async function cancelOrder(orderNumber, phone, email) {
+  const { data, error } = await supabase.rpc('cancel_online_order', {
+    p_order_number: orderNumber,
+    p_customer_phone: phone || '',
+    p_customer_email: email || ''
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to cancel order.');
+  }
+  return data;
 }
 
 export async function getOrderById(orderId) {

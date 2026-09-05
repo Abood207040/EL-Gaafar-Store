@@ -8,8 +8,12 @@ import ProductCard from '../components/products/ProductCard.jsx';
 import { useLocalization } from '../i18n/Localization.jsx';
 import { getRelatedStoreProducts, getStoreProductById } from '../services/productsService.js';
 import EmptyState from '../components/ui/EmptyState.jsx';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.jsx';
 
 export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
+  const { id } = useParams();
+  const { isAdmin } = useAuth();
   const {
     t,
     isArabic,
@@ -27,7 +31,7 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
   const [error, setError] = useState('');
   const [qty, setQty] = useState(1);
 
-  const productId = typeof product === 'string' ? product : (product?.id || product?.productId || null);
+  const productId = id || (typeof product === 'string' ? product : (product?.id || product?.productId || null));
 
   useEffect(() => {
     let ignore = false;
@@ -94,6 +98,9 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
   }
 
   const outOfStock = current.stockStatus === STOCK_STATUSES.OUT_OF_STOCK;
+  const unavailableOnline = current.availableOnline === false;
+  const cannotPurchase = outOfStock || unavailableOnline;
+  
   const specRows = [
     ['Size', current.specs?.size],
     ['Material', current.specs?.material],
@@ -152,7 +159,11 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
               </div>
               <div className="pdp-meta-item">
                 <span className="pdp-meta-label">{t('status')}</span>
-                <span className="pdp-meta-value">{current.stock > 0 ? `${current.stock} ${t('items')}` : translateStock(STOCK_STATUSES.OUT_OF_STOCK)}</span>
+                <span className="pdp-meta-value">
+                  {current.stock > 0 
+                    ? (isAdmin ? `${current.stock} ${t('items')}` : translateStock(current.stockStatus)) 
+                    : translateStock(STOCK_STATUSES.OUT_OF_STOCK)}
+                </span>
               </div>
             </div>
 
@@ -161,7 +172,7 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
               <span className="pdp-price-amount">{current.price.toFixed(2)}</span>
             </div>
 
-            {!outOfStock ? (
+            {!cannotPurchase ? (
               <div className="pdp-cart-row">
                 <div>
                   <label className="form-label" id="qty-label">{t('quantity')}</label>
@@ -170,6 +181,12 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
                     onChange={setQty}
                     max={current.stock}
                     aria-labelledby="qty-label"
+                    onLimitReached={(maxVal) => {
+                      const msg = isArabic 
+                        ? `الحد الأقصى المتاح هو ${maxVal}. إذا كنت بحاجة إلى المزيد، يرجى التواصل معنا عبر واتساب لترتيب ذلك.`
+                        : `The maximum you can get is ${maxVal}. If you need more, please contact us on WhatsApp to arrange it.`;
+                      window.alert(msg);
+                    }}
                   />
                 </div>
                 <button
@@ -182,9 +199,11 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
               </div>
             ) : (
               <div className="pdp-out-of-stock">
-                <span className="badge badge-danger">{t('outOfStockLong')}</span>
+                <span className="badge badge-danger">
+                  {unavailableOnline ? (isArabic ? 'غير متاح للبيع عبر الإنترنت' : 'Not available for online sale') : t('outOfStockLong')}
+                </span>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
-                  {t('restockContact')}
+                  {unavailableOnline ? (isArabic ? 'هذا المنتج متاح فقط في المتجر الفعلي.' : 'This product is only available in-store.') : t('restockContact')}
                 </p>
               </div>
             )}

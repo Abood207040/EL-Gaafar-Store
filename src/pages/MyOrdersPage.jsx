@@ -1,39 +1,46 @@
 // src/pages/MyOrdersPage.jsx
-import { useEffect, useMemo, useState } from 'react';
-import { ORDER_STATUSES } from '../constants/domain.js';
+import { useEffect, useState } from 'react';
 import { OrderStatusBadge } from '../components/ui/StatusBadge.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { useLocalization } from '../i18n/Localization.jsx';
-import { getCustomerOrders } from '../services/ordersService.js';
+import { trackOrder } from '../services/ordersService.js';
+import { useLocation } from 'react-router-dom';
 
-const STATUS_FILTERS = ['All', ...Object.values(ORDER_STATUSES)];
 
 export default function MyOrdersPage({ navigate, initialLookup = '' }) {
-  const { t, translateOrderStatus, translateFulfillment, productName, isArabic } = useLocalization();
-  const [lookup, setLookup] = useState(initialLookup || '');
+  const { state } = useLocation();
+  const { t, translateFulfillment, productName, isArabic } = useLocalization();
+  const [orderNumber, setOrderNumber] = useState(initialLookup || state?.lookup || '');
+  const [contact, setContact] = useState('');
+  
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [lookupDone, setLookupDone] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [search, setSearch] = useState('');
 
   const lookupHint = isArabic
-    ? 'ادخل رقم الهاتف أو البريد الإلكتروني لعرض طلباتك'
-    : 'Enter your phone or email to load your orders';
-  const lookupAction = isArabic ? 'عرض الطلبات' : 'Load Orders';
+    ? 'رقم الهاتف أو البريد الإلكتروني'
+    : 'Phone or Email';
+  const orderNumberHint = isArabic ? 'رقم الطلب (مثال: AJ-...)' : 'Order Number (e.g. AJ-...)';
+  const lookupAction = isArabic ? 'تتبع الطلب' : 'Track Order';
 
   const runLookup = async () => {
-    const value = lookup.trim();
-    if (!value) return;
+    const num = orderNumber.trim();
+    const contactVal = contact.trim();
+    if (!num || !contactVal) return;
 
     setLoading(true);
     setLoadError('');
     setLookupDone(true);
 
     try {
-      const rows = await getCustomerOrders(value);
-      setOrders(rows);
+      const order = await trackOrder(num, contactVal);
+      if (order) {
+        setOrders([order]);
+      } else {
+        setLoadError(isArabic ? 'لم يتم العثور على طلب مطابق.' : 'No matching order found.');
+        setOrders([]);
+      }
     } catch (error) {
       setLoadError(error.message || (isArabic ? 'تعذر تحميل الطلبات.' : 'Could not load orders.'));
       setOrders([]);
@@ -43,48 +50,11 @@ export default function MyOrdersPage({ navigate, initialLookup = '' }) {
   };
 
   useEffect(() => {
-    if (!initialLookup) return;
-    setLookup(initialLookup);
-  }, [initialLookup]);
+    // If initialLookup is provided, it's just the order number, we still need contact.
+    // So we don't automatically run lookup unless both are somehow provided.
+  }, []);
 
-  useEffect(() => {
-    if (!initialLookup) return;
-    let ignore = false;
-    const preload = async () => {
-      setLoading(true);
-      setLoadError('');
-      setLookupDone(true);
-      try {
-        const rows = await getCustomerOrders(initialLookup);
-        if (!ignore) setOrders(rows);
-      } catch (error) {
-        if (!ignore) {
-          setLoadError(error.message || (isArabic ? 'تعذر تحميل الطلبات.' : 'Could not load orders.'));
-          setOrders([]);
-        }
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    preload();
-    return () => {
-      ignore = true;
-    };
-  }, [initialLookup, isArabic]);
-
-  const filtered = useMemo(
-    () =>
-      orders.filter((order) => {
-        const matchStatus = statusFilter === 'All' || order.status === statusFilter;
-        const q = search.trim().toLowerCase();
-        const matchSearch =
-          !q ||
-          String(order.orderNumber || order.id).toLowerCase().includes(q) ||
-          String(order.customer?.name || '').toLowerCase().includes(q);
-        return matchStatus && matchSearch;
-      }),
-    [orders, search, statusFilter]
-  );
+  const filtered = orders;
 
   return (
     <div className="my-orders-page animate-fadeIn">
@@ -99,24 +69,33 @@ export default function MyOrdersPage({ navigate, initialLookup = '' }) {
           </button>
         </div>
 
-        <div className="orders-toolbar" style={{ marginBottom: '1rem' }}>
-          <div className="input-group" style={{ maxWidth: 420 }}>
-            <span className="input-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </span>
+        <div className="orders-toolbar" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div className="input-group" style={{ flex: 1, minWidth: '200px', maxWidth: 300 }}>
+            <span className="input-icon" aria-hidden="true">#</span>
+            <input
+              className="input"
+              type="text"
+              placeholder={orderNumberHint}
+              value={orderNumber}
+              onChange={(event) => setOrderNumber(event.target.value)}
+              aria-label={orderNumberHint}
+            />
+          </div>
+          <div className="input-group" style={{ flex: 1, minWidth: '200px', maxWidth: 300 }}>
+            <span className="input-icon" aria-hidden="true">@</span>
             <input
               className="input"
               type="text"
               placeholder={lookupHint}
-              value={lookup}
-              onChange={(event) => setLookup(event.target.value)}
+              value={contact}
+              onChange={(event) => setContact(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') runLookup();
               }}
               aria-label={lookupHint}
             />
           </div>
-          <button className="btn btn-primary btn-sm" onClick={runLookup} disabled={loading || !lookup.trim()}>
+          <button className="btn btn-primary btn-sm" onClick={runLookup} disabled={loading || !orderNumber.trim() || !contact.trim()}>
             {loading ? t('saving') : lookupAction}
           </button>
         </div>
@@ -125,45 +104,17 @@ export default function MyOrdersPage({ navigate, initialLookup = '' }) {
           <p style={{ color: 'var(--danger)', marginBottom: '0.75rem', fontSize: '0.875rem' }}>{loadError}</p>
         ) : null}
 
-        <div className="orders-toolbar">
-          <div className="input-group" style={{ maxWidth: 320 }}>
-            <span className="input-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </span>
-            <input
-              className="input"
-              type="search"
-              placeholder={t('searchOrders')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              aria-label={t('searchOrders')}
-            />
-          </div>
 
-          <div className="status-filter-tabs" role="tablist" aria-label={t('orderStatus')}>
-            {STATUS_FILTERS.map((status) => (
-              <button
-                key={status}
-                role="tab"
-                aria-selected={statusFilter === status}
-                className={`status-tab ${statusFilter === status ? 'active' : ''}`}
-                onClick={() => setStatusFilter(status)}
-              >
-                {status === 'All' ? t('allStatuses') : translateOrderStatus(status)}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {!lookupDone && orders.length === 0 ? (
-          <EmptyState icon="..." title={isArabic ? 'ابحث عن طلباتك' : 'Find your orders'} description={lookupHint} />
+          <EmptyState icon="..." title={isArabic ? 'ابحث عن طلبك' : 'Track your order'} description={isArabic ? 'الرجاء إدخال رقم الطلب ورقم الهاتف/البريد الإلكتروني.' : 'Please enter your order number and phone/email.'} />
         ) : loading ? (
           <EmptyState icon="..." title={t('loadingProducts')} description={t('loadingProducts')} />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="..."
             title={t('noOrdersFound')}
-            description={search || statusFilter !== 'All' ? t('noOrdersDescription') : t('noOrdersYet')}
+            description={t('noOrdersYet')}
             actionLabel={t('browseProducts')}
             onAction={() => navigate('shop')}
           />

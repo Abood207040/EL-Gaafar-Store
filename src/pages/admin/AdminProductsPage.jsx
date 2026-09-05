@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { StockBadge } from '../../components/ui/StatusBadge.jsx';
 import useCatalogOptions from '../../hooks/useCatalogOptions.js';
 import { useLocalization } from '../../i18n/Localization.jsx';
-import { deactivateAdminProduct, listAdminProducts } from '../../services/productsService.js';
+import { deactivateAdminProduct, listAdminProducts, bulkDeactivateProducts } from '../../services/productsService.js';
+import PrintBarcodesModal from './PrintBarcodesModal.jsx';
 
 export default function AdminProductsPage({ navigate }) {
   const { categories } = useCatalogOptions();
@@ -14,6 +15,9 @@ export default function AdminProductsPage({ navigate }) {
   const [search, setSearch] = useState('');
   const [categoryTab, setCategoryTab] = useState('All');
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const ITEMS_PER_PAGE = 8;
 
   useEffect(() => {
@@ -65,6 +69,43 @@ export default function AdminProductsPage({ navigate }) {
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = filtered.map((p) => p.id);
+      setSelectedIds(new Set(allIds));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id, checked) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) newSelected.add(id);
+    else newSelected.delete(id);
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmed = window.confirm(`${t('deactivateSelected')} (${selectedIds.size})?`);
+    if (!confirmed) return;
+
+    setIsBulkDeleting(true);
+    try {
+      await bulkDeactivateProducts(Array.from(selectedIds));
+      setItems((prev) => prev.map((item) => (selectedIds.has(item.id) ? { ...item, active: false } : item)));
+      setSelectedIds(new Set());
+      window.alert(t('productsDeactivated'));
+    } catch (err) {
+      window.alert(err.message || t('deleteProductFailed'));
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
+  const someFilteredSelected = filtered.length > 0 && filtered.some((p) => selectedIds.has(p.id)) && !allFilteredSelected;
+
   return (
     <div className="admin-page animate-fadeIn">
       <div className="admin-page-toolbar">
@@ -115,11 +156,39 @@ export default function AdminProductsPage({ navigate }) {
         ))}
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="bulk-actions-toolbar" style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--surface-hover)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <strong>{t('selectedCount', selectedIds.size)}</strong>
+            <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())} style={{ marginLeft: '1rem' }}>
+              {t('clearSelection')}
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-outline btn-sm" onClick={() => setShowPrintModal(true)}>
+              {t('printBarcodes')}
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={handleBulkDeactivate} disabled={isBulkDeleting}>
+              {t('deactivateSelected')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card" style={{ marginTop: '1rem' }}>
         <div className="table-wrapper" style={{ border: 'none' }}>
           <table className="table">
             <thead>
               <tr>
+                <th style={{ width: '40px' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={allFilteredSelected} 
+                    ref={(input) => { if (input) input.indeterminate = someFilteredSelected; }}
+                    onChange={handleSelectAll} 
+                    aria-label={t('selectAll')} 
+                  />
+                </th>
                 <th>{t('image')}</th>
                 <th>{t('productName')}</th>
                 <th>{t('sku')}</th>
@@ -146,6 +215,14 @@ export default function AdminProductsPage({ navigate }) {
               ) : (
                 paginated.map((product) => (
                   <tr key={product.id}>
+                    <td>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.has(product.id)} 
+                        onChange={(e) => handleSelectOne(product.id, e.target.checked)} 
+                        aria-label={t('selected')} 
+                      />
+                    </td>
                     <td>
                       <div className="admin-product-thumb">
                         <img src={product.image} alt={productName(product)} />
@@ -222,6 +299,13 @@ export default function AdminProductsPage({ navigate }) {
             {'>'}
           </button>
         </nav>
+      )}
+
+      {showPrintModal && (
+        <PrintBarcodesModal 
+          selectedProducts={items.filter(p => selectedIds.has(p.id))} 
+          onClose={() => setShowPrintModal(false)} 
+        />
       )}
     </div>
   );

@@ -6,7 +6,8 @@ import { useLocalization } from '../../i18n/Localization.jsx';
 export default function AdminLayout({ currentPage, navigate, children }) {
   const { t } = useLocalization();
   const PAGE_TITLES = {
-    'admin-dashboard': { title: t('adminDashboard'), subtitle: t('adminDashboardSub') },
+    'admin-dashboard': { title: t('adminPanel'), subtitle: 'Choose a management module' },
+    'admin-online-dashboard': { title: t('adminDashboard'), subtitle: t('adminDashboardSub') },
     'admin-products': { title: t('adminProducts'), subtitle: t('adminProductsSub') },
     'admin-product-form': { title: t('adminProductForm'), subtitle: t('adminProductFormSub') },
     'admin-catalog': { title: t('adminCatalog'), subtitle: t('adminCatalogSub') },

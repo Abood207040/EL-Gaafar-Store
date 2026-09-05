@@ -4,14 +4,19 @@ import { FULFILLMENT, PAYMENT_METHODS } from '../constants/domain.js';
 import { STORE_INFO } from '../constants/store.js';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { useLocalization } from '../i18n/Localization.jsx';
+import { getDeliveryFee } from '../services/storeSettingsService.js';
 import { createOrder } from '../services/ordersService.js';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
-const DELIVERY_FEE = 25;
+// Default fallback; will be updated by useEffect
+let cachedDeliveryFee = 25;
 
 export default function CheckoutPage({ cartItems, navigate, onPlaceOrder, initialFulfillment }) {
-  const { t, isArabic, productName, translateFulfillment } = useLocalization();
+  const { state } = useLocation();
+  const { t, isArabic, productName, translateFulfillment, parseRpcError } = useLocalization();
   const [step, setStep] = useState(0);
-  const [fulfillment, setFulfillment] = useState(initialFulfillment || FULFILLMENT.DELIVERY);
+  const [fulfillment, setFulfillment] = useState(initialFulfillment || state?.fulfillment || FULFILLMENT.DELIVERY);
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -23,9 +28,17 @@ export default function CheckoutPage({ cartItems, navigate, onPlaceOrder, initia
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [deliveryFeeValue, setDeliveryFeeValue] = useState(cachedDeliveryFee);
+
+  useEffect(() => {
+    getDeliveryFee().then(fee => {
+      cachedDeliveryFee = fee;
+      setDeliveryFeeValue(fee);
+    });
+  }, []);
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.qty, 0);
-  const deliveryFee = fulfillment === FULFILLMENT.DELIVERY ? DELIVERY_FEE : 0;
+  const deliveryFee = fulfillment === FULFILLMENT.DELIVERY ? deliveryFeeValue : 0;
   const total = subtotal + deliveryFee;
   const steps = [t('customerInformation'), t('deliveryOrPickup'), t('cashOnDelivery')];
 
@@ -65,7 +78,7 @@ export default function CheckoutPage({ cartItems, navigate, onPlaceOrder, initia
       if (onPlaceOrder) onPlaceOrder(order);
       navigate('order-success', { order });
     } catch (error) {
-      setSubmitError(error.message || 'Failed to create order.');
+      setSubmitError(parseRpcError(error));
     } finally {
       setSubmitting(false);
     }

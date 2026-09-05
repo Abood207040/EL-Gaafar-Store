@@ -12,17 +12,12 @@ export default function Footer({ navigate }) {
         <div className="footer-grid">
           {/* Brand */}
           <div className="footer-brand">
-            <div className="footer-logo">
-              <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="16" fill="#F67113" />
-                <path d="M8 16 C8 11 12 8 16 8 C20 8 24 11 24 16" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <circle cx="16" cy="18" r="4" fill="#fff" opacity="0.9"/>
-                <path d="M16 22 L16 26" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
-              </svg>
-              <div>
-                <strong>Al-Jafar Store</strong>
-                <span className="arabic-text" lang="ar" dir="rtl">متجر الجعفر</span>
-              </div>
+            <div className="footer-logo" style={{ display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/images/Ga3for-logo.png" 
+                alt="Ga3for" 
+                style={{ height: '50px', width: 'auto', objectFit: 'contain', maxWidth: '160px' }} 
+              />
             </div>
             <p className="footer-tagline">
               {t('heroTitle')}<br />
@@ -52,6 +47,7 @@ export default function Footer({ navigate }) {
               <li><button onClick={() => navigate('cart')} className="footer-link">{t('cart')}</button></li>
               <li><button onClick={() => navigate('my-orders')} className="footer-link">{t('myOrders')}</button></li>
               <li><button onClick={() => navigate('checkout')} className="footer-link">{t('checkout')}</button></li>
+              <li><button onClick={() => navigate('contact')} className="footer-link">{t('contactUs')}</button></li>
             </ul>
           </div>
 

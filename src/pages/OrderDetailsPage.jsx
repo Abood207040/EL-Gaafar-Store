@@ -5,20 +5,24 @@ import OrderTimeline from '../components/ui/OrderTimeline.jsx';
 import { FULFILLMENT } from '../constants/domain.js';
 import { STORE_INFO } from '../constants/store.js';
 import { useLocalization } from '../i18n/Localization.jsx';
-import { getOrderById } from '../services/ordersService.js';
+import { getOrderById, cancelOrder } from '../services/ordersService.js';
 import EmptyState from '../components/ui/EmptyState.jsx';
+import { useParams } from 'react-router-dom';
 
 export default function OrderDetailsPage({ order, navigate }) {
-  const { t, isArabic, productName, productAltName } = useLocalization();
+  const { id } = useParams();
+  const { t, isArabic, productName, productAltName, parseRpcError } = useLocalization();
   const [currentOrder, setCurrentOrder] = useState(order || null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const orderId = useMemo(() => {
+    if (id) return id;
     if (!order) return null;
     if (typeof order === 'string' || typeof order === 'number') return order;
-    return order.id || null;
-  }, [order]);
+    return order.orderNumber || order.id || null;
+  }, [order, id]);
 
   useEffect(() => {
     let ignore = false;
@@ -45,6 +49,22 @@ export default function OrderDetailsPage({ order, navigate }) {
       ignore = true;
     };
   }, [orderId]);
+
+  const handleCancelOrder = async () => {
+    if (!currentOrder || cancelling) return;
+    if (!window.confirm(isArabic ? 'هل أنت متأكد من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this order?')) return;
+    
+    setCancelling(true);
+    try {
+      await cancelOrder(currentOrder.orderNumber, currentOrder.customer?.phone, currentOrder.customer?.email);
+      const fresh = await getOrderById(orderId);
+      setCurrentOrder(fresh);
+    } catch (error) {
+      alert(parseRpcError(error));
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -231,6 +251,17 @@ export default function OrderDetailsPage({ order, navigate }) {
             >
               {t('contactStoreWhatsapp')}
             </a>
+
+            {(currentOrder.status === 'pending' || currentOrder.status === 'confirmed') && (
+              <button
+                className="btn btn-outline w-full"
+                style={{ marginTop: '0.75rem', borderColor: 'var(--danger)', color: 'var(--danger)' }}
+                onClick={handleCancelOrder}
+                disabled={cancelling}
+              >
+                {cancelling ? t('saving') : (isArabic ? 'إلغاء الطلب' : 'Cancel Order')}
+              </button>
+            )}
 
             <button
               className="btn btn-outline w-full"

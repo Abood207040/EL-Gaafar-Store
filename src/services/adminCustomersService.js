@@ -1,16 +1,9 @@
-import { RLS_PERMISSION_ERROR } from '../constants/domain.js';
 import { supabase } from './authService.js';
+import { withAdminRlsError } from './orderUtils.js';
 
 const CUSTOMERS_TABLE = 'customers';
 const ORDERS_TABLE = 'orders';
 
-function withAdminRlsError(error) {
-  if (!error) return null;
-  if (error.code === '42501') {
-    return new Error(RLS_PERMISSION_ERROR);
-  }
-  return error;
-}
 
 export async function getAdminCustomers() {
   const { data: customers, error } = await supabase
@@ -22,6 +15,7 @@ export async function getAdminCustomers() {
 
   const customerIds = (customers || []).map((item) => item.id);
   let orders = [];
+  let offlineSales = [];
   if (customerIds.length) {
     const ordersResult = await supabase
       .from(ORDERS_TABLE)
@@ -29,24 +23,38 @@ export async function getAdminCustomers() {
       .in('customer_id', customerIds);
     if (ordersResult.error) throw withAdminRlsError(ordersResult.error);
     orders = ordersResult.data || [];
+
+    const offlineResult = await supabase
+      .from('offline_sales')
+      .select('id, customer_id, total, created_at')
+      .in('customer_id', customerIds);
+    if (offlineResult.error) throw withAdminRlsError(offlineResult.error);
+    offlineSales = offlineResult.data || [];
   }
 
   const byCustomer = new Map();
   for (const customer of customers || []) {
-    byCustomer.set(customer.id, []);
+    byCustomer.set(customer.id, { orders: [], offline: [] });
   }
   for (const order of orders) {
     if (!byCustomer.has(order.customer_id)) continue;
-    byCustomer.get(order.customer_id).push(order);
+    byCustomer.get(order.customer_id).orders.push(order);
+  }
+  for (const sale of offlineSales) {
+    if (!byCustomer.has(sale.customer_id)) continue;
+    byCustomer.get(sale.customer_id).offline.push(sale);
   }
 
   return (customers || []).map((customer) => {
-    const list = byCustomer.get(customer.id) || [];
-    const totalOrders = list.length;
-    const totalSpent = list.reduce((sum, order) => sum + Number(order.total || 0), 0);
-    const sorted = [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const lastOrderDate = sorted[0]?.created_at
-      ? new Date(sorted[0].created_at).toISOString().slice(0, 10)
+    const custData = byCustomer.get(customer.id) || { orders: [], offline: [] };
+    const totalOrders = custData.orders.length + custData.offline.length;
+    const totalSpentOnline = custData.orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const totalSpentOffline = custData.offline.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    const totalSpent = totalSpentOnline + totalSpentOffline;
+    
+    const allActivity = [...custData.orders, ...custData.offline].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const lastOrderDate = allActivity[0]?.created_at
+      ? new Date(allActivity[0].created_at).toISOString().slice(0, 10)
       : '';
 
     const recentCutoff = new Date();
@@ -86,4 +94,14 @@ export async function getCustomerStats() {
     newThisMonth,
     active: customers.filter((customer) => customer.status === 'Active').length,
   };
+}
+
+export async function createCustomer(payload) {
+  const { data, error } = await supabase
+    .from(CUSTOMERS_TABLE)
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
