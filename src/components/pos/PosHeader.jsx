@@ -32,13 +32,15 @@ export default function PosHeader() {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '0.75rem 1.5rem',
+      flexWrap: 'wrap',
+      gap: '0.75rem',
+      padding: '0.75rem clamp(0.75rem, 2vw, 1.5rem)',
       background: 'var(--card-bg)',
       borderBottom: '1px solid var(--border-color)',
       marginBottom: '1rem'
     }}>
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '1.25rem', margin: 0, paddingRight: '1rem', borderRight: '1px solid var(--border-color)' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }} className="pos-header-actions">
+        <h1 style={{ fontSize: '1.25rem', margin: 0, paddingInlineEnd: '0.75rem', borderInlineEnd: '1px solid var(--border-color)' }}>
           {t('pos')}
         </h1>
         <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/pos')}>
@@ -52,7 +54,7 @@ export default function PosHeader() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
           <span>{t('cashier')}: </span>
           <span style={{ fontWeight: 600, color: 'var(--text-color)' }}>

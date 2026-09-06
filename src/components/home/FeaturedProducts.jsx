@@ -50,7 +50,7 @@ export default function FeaturedProducts({ onAddToCart, navigate }) {
             {t('shopAllProducts')} &rarr;
           </button>
         </div>
-        <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
+        <div className="product-grid">
           {products.map(product => (
             <ProductCard
               key={product.id}

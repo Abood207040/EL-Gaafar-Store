@@ -12,8 +12,7 @@ export default function PosCheckout() {
     amountPaid, setAmountPaid, 
     changeAmount, remainingBalance, guestDebtBlocked,
     canCheckout, handleCheckout, processing,
-    error, successMessage,
-    customer
+    error, successMessage
   } = usePos();
 
   return (

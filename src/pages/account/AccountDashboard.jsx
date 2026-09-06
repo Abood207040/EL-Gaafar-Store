@@ -239,7 +239,7 @@ export default function AccountDashboard({ navigate }) {
         </div>
 
         {/* 2-Column Info & Profile Editing */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           
           {/* Profile Card with Live Edit Functionality */}
           <div className="card">

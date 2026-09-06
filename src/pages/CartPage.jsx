@@ -7,7 +7,7 @@ import { FULFILLMENT, getDominantDeliveryClass } from '../constants/domain.js';
 import { useLocalization } from '../i18n/Localization.jsx';
 
 export default function CartPage({ cartItems, onUpdateQty, onRemove, navigate }) {
-  const { t, isArabic, productName, productAltName, translateFulfillment } = useLocalization();
+  const { t, isArabic, productName, productAltName } = useLocalization();
 
   const hasUndeliverableItems = cartItems.some((item) => item.product.isDeliveryAvailable === false);
   const dominantClass = getDominantDeliveryClass(cartItems);

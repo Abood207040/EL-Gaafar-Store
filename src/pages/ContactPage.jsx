@@ -100,7 +100,7 @@ export default function ContactPage({ navigate }) {
         {/* Top 4 Quick Info Cards */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
           gap: '1.25rem',
           marginBottom: '3rem'
         }}>
@@ -305,7 +305,7 @@ export default function ContactPage({ navigate }) {
         {/* Main 2-Column Section: Form + Location & Benefits */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
           gap: '2rem',
           alignItems: 'start',
           marginBottom: '4rem'
@@ -391,7 +391,7 @@ export default function ContactPage({ navigate }) {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '1rem' }}>
                   <div className="form-group">
                     <label className="form-label" htmlFor="contact-phone">{t('yourPhone')} *</label>
                     <input

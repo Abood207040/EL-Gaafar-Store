@@ -350,6 +350,34 @@ export default function Navbar({ currentPage, navigate, cartCount = 0 }) {
               </button>
             </div>
 
+            {/* Mobile Drawer Quick Search */}
+            <form 
+              className="mobile-drawer-search"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (searchQuery.trim()) {
+                  navigate('shop', { q: searchQuery.trim() });
+                  setSearchQuery('');
+                  setMenuOpen(false);
+                }
+              }}
+              style={{ padding: '0.5rem 1rem 0.75rem' }}
+            >
+              <div className="search-input-wrapper" style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.18)', borderRadius: '9999px' }}>
+                <span className="search-icon" style={{ paddingInlineStart: '0.85rem', color: '#94a3b8' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input
+                  type="search"
+                  className="search-input"
+                  style={{ padding: '0.6rem 0.75rem', color: '#fff', fontSize: '0.875rem', width: '100%', background: 'transparent', border: 'none', outline: 'none' }}
+                  placeholder={isArabic ? 'ابحث عن خلاط، محبس، ماسورة...' : 'Search products, SKU, tools...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </form>
+
             <div className="mobile-drawer-links">
               {navLinks.map((link) => {
                 const isActive = currentPage === link.id;

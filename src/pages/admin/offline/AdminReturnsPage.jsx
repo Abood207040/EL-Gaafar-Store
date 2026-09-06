@@ -82,10 +82,10 @@ export default function AdminReturnsPage() {
         <h1>{t('returns') || 'Returns'}</h1>
       </div>
 
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         
         {/* Sales List */}
-        <div className="card" style={{ flex: 1, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+        <div className="card" style={{ flex: '1 1 min(100%, 380px)', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
           <div className="card-header">
             <h3>Recent Sales</h3>
           </div>
@@ -125,7 +125,8 @@ export default function AdminReturnsPage() {
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
-              <table className="table">
+              <div className="table-wrapper">
+                <table className="table">
                 <thead>
                   <tr>
                     <th>Item</th>
@@ -172,6 +173,7 @@ export default function AdminReturnsPage() {
                   })}
                 </tbody>
               </table>
+              </div>
 
               <div className="form-group">
                 <label className="form-label">Refund Reason</label>

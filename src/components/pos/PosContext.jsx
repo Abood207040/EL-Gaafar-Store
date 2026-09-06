@@ -146,7 +146,7 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
     
     cart.forEach(item => {
       const lineSubtotal = item.product.price * item.qty;
-      let lineDiscount = 0;
+      let lineDiscount;
       const dValue = Number(item.discountValue) || 0;
       
       if (item.discountType === 'percentage') {
@@ -159,7 +159,7 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
       subtotal += (lineSubtotal - lineDiscount);
     });
 
-    let invoiceDiscount = 0;
+    let invoiceDiscount;
     const invDValue = Number(invoiceDiscountValue) || 0;
     if (invoiceDiscountType === 'percentage') {
       const cappedValue = Math.min(invDValue, 100);
@@ -290,6 +290,7 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
   return <PosContext.Provider value={value}>{children}</PosContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePos() {
   const context = useContext(PosContext);
   if (!context) throw new Error('usePos must be used within a PosProvider');

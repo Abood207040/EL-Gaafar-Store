@@ -1187,6 +1187,7 @@ export function LocalizationProvider({ children }) {
       productAltName,
       productDescription,
       customerStatus,
+      timelineStep,
       parseRpcError,
       formatCurrency: (amount) => {
         const num = Number(amount || 0);

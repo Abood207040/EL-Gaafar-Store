@@ -74,6 +74,26 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
   }, [productId, t]);
 
   const current = useMemo(() => item, [item]);
+  const [added, setAdded] = useState(false);
+  const [selectedImg, setSelectedImg] = useState(item?.image || '');
+
+  // Keep selected image in sync if current changes
+  useEffect(() => {
+    if (current?.image) {
+      setSelectedImg(current.image);
+    }
+  }, [current]);
+
+  const galleryImages = useMemo(() => {
+    if (!current) return [];
+    if (Array.isArray(current.images) && current.images.length > 0) {
+      return current.images;
+    }
+    if (Array.isArray(current.gallery) && current.gallery.length > 0) {
+      return current.gallery;
+    }
+    return [current.image];
+  }, [current]);
 
   if (loading) {
     return (
@@ -109,26 +129,6 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
     ['Pressure Rating', current.specs?.pressureRating],
     ['Warranty', current.specs?.warranty],
   ].filter(([, val]) => val);
-
-  const [added, setAdded] = useState(false);
-  const [selectedImg, setSelectedImg] = useState(current?.image || '');
-
-  // Keep selected image in sync if current changes
-  useEffect(() => {
-    if (current?.image) {
-      setSelectedImg(current.image);
-    }
-  }, [current]);
-
-  const galleryImages = useMemo(() => {
-    if (Array.isArray(current.images) && current.images.length > 0) {
-      return current.images;
-    }
-    if (Array.isArray(current.gallery) && current.gallery.length > 0) {
-      return current.gallery;
-    }
-    return [current.image];
-  }, [current]);
 
   const handleAddToCart = () => {
     onAddToCart(current, qty);
@@ -329,16 +329,18 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
                 <h2 style={{ fontSize: '1rem' }}>{t('technicalSpecifications')}</h2>
               </div>
               <div className="card-body" style={{ padding: 0 }}>
-                <table className="table specs-table">
-                  <tbody>
-                    {specRows.map(([key, val]) => (
-                      <tr key={key}>
-                        <th style={{ fontWeight: 600, width: '40%', background: '#F8FAFC' }}>{translateSpecLabel(key)}</th>
-                        <td>{translateSpecValue(val)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="table-wrapper" style={{ border: 'none' }}>
+                  <table className="table specs-table">
+                    <tbody>
+                      {specRows.map(([key, val]) => (
+                        <tr key={key}>
+                          <th style={{ fontWeight: 600, width: '40%', background: '#F8FAFC' }}>{translateSpecLabel(key)}</th>
+                          <td>{translateSpecValue(val)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

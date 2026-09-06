@@ -57,8 +57,8 @@ export default function AdminOfflineSalesPage() {
 
       {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{error}</p>}
 
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-        <div className="card" style={{ flex: 2 }}>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div className="card" style={{ flex: '1 1 min(100%, 500px)', minWidth: 0 }}>
           <div className="table-wrapper">
             <table className="table">
               <thead>
@@ -100,7 +100,7 @@ export default function AdminOfflineSalesPage() {
         </div>
 
         {selectedSale && (
-          <div className="card animate-fadeIn" style={{ flex: 1, position: 'sticky', top: '100px' }}>
+          <div className="card animate-fadeIn" style={{ flex: '1 1 min(100%, 360px)', position: 'sticky', top: '100px', minWidth: 0 }}>
             <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
               <h2 style={{ fontSize: '1.1rem' }}>Receipt: {selectedSale.sale_number}</h2>
               <button className="btn btn-outline btn-sm" onClick={() => setSelectedSale(null)}>✕</button>

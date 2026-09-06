@@ -2,19 +2,19 @@ export default function AdminDashboardPage({ navigate }) {
 
   return (
     <div className="admin-page animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-color)', marginBottom: '0.5rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 'bold', color: 'var(--text-color)', marginBottom: '0.5rem' }}>
           Welcome back to Al-Jafar Store
         </h1>
-        <p style={{ color: 'var(--muted)', fontSize: '1.1rem' }}>
+        <p style={{ color: 'var(--muted)', fontSize: 'clamp(0.95rem, 2vw, 1.1rem)' }}>
           Select a management module to continue
         </p>
       </div>
 
       <div className="mega-hub-grid" style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '2rem', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', 
+        gap: '1.5rem', 
         maxWidth: '1200px', 
         margin: '0 auto', 
         width: '100%' 

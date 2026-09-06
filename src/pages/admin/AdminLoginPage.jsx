@@ -147,6 +147,8 @@ export default function AdminLoginPage({ navigate }) {
               >
                 {loading ? t('signingIn') : t('signIn')}
               </button>
+
+
               
               <button 
                 type="button" 

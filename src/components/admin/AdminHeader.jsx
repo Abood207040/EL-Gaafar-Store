@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useLocalization } from '../../i18n/Localization.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
 
-export default function AdminHeader({ title, subtitle, navigate }) {
+export default function AdminHeader({ title, subtitle, navigate, onToggleSidebar }) {
   const { t } = useLocalization();
   const { signOut } = useAuth();
   const [search, setSearch] = useState('');
@@ -19,8 +19,24 @@ export default function AdminHeader({ title, subtitle, navigate }) {
   return (
     <header className="admin-header" role="banner">
       <div className="admin-header-left">
-        <h1 className="admin-page-title">{title}</h1>
-        {subtitle && <p className="admin-page-subtitle">{subtitle}</p>}
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className="admin-menu-toggle btn btn-ghost btn-icon"
+            onClick={onToggleSidebar}
+            aria-label="Toggle admin navigation"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
+        <div>
+          <h1 className="admin-page-title">{title}</h1>
+          {subtitle && <p className="admin-page-subtitle">{subtitle}</p>}
+        </div>
       </div>
       <div className="admin-header-right">
         <div className="admin-search input-group">

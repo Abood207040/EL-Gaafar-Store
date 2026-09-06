@@ -217,6 +217,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+
   const isAdmin = profile?.role === 'admin';
   const value = {
     session,

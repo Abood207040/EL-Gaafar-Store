@@ -424,32 +424,32 @@ export default function AdminDeliveryPage() {
       )}
 
       {/* Tabs Bar */}
-      <div style={{ display: 'flex', borderBottom: '2px solid var(--line)', marginBottom: '1.5rem', gap: '1rem' }}>
+      <div style={{ display: 'flex', borderBottom: '2px solid var(--line)', marginBottom: '1.5rem', gap: '0.75rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch', whiteSpace: 'nowrap', flexWrap: 'nowrap', paddingBottom: '2px' }}>
         <button
           className={`btn ${activeTab === 'rates' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('rates')}
-          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.5rem', fontWeight: 600 }}
+          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.25rem', fontWeight: 600, flexShrink: 0 }}
         >
           📊 {isArabic ? 'مصفوفة الأسعار (Pricing Matrix)' : 'Rates Matrix'}
         </button>
         <button
           className={`btn ${activeTab === 'governorates' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('governorates')}
-          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.5rem', fontWeight: 600 }}
+          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.25rem', fontWeight: 600, flexShrink: 0 }}
         >
           🏛️ {isArabic ? 'المحافظات' : 'Governorates'}
         </button>
         <button
           className={`btn ${activeTab === 'areas' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('areas')}
-          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.5rem', fontWeight: 600 }}
+          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.25rem', fontWeight: 600, flexShrink: 0 }}
         >
           📍 {isArabic ? 'المناطق التابعة' : 'Areas'}
         </button>
         <button
           className={`btn ${activeTab === 'classes' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('classes')}
-          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.5rem', fontWeight: 600 }}
+          style={{ borderRadius: '8px 8px 0 0', padding: '0.75rem 1.25rem', fontWeight: 600, flexShrink: 0 }}
         >
           📦 {isArabic ? 'فئات التوصيل' : 'Delivery Classes'}
         </button>
@@ -506,7 +506,7 @@ export default function AdminDeliveryPage() {
                 </button>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
+              <div className="table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                 <table className="table" style={{ margin: 0, minWidth: '850px' }}>
                   <thead>
                     <tr style={{ background: 'var(--bg-subtle, #f8fafc)' }}>
@@ -660,7 +660,7 @@ export default function AdminDeliveryPage() {
             </button>
           </div>
           <div className="card-body" style={{ padding: 0 }}>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table className="table" style={{ margin: 0 }}>
                 <thead>
                   <tr>
@@ -767,7 +767,7 @@ export default function AdminDeliveryPage() {
           </div>
 
           <div className="card-body" style={{ padding: 0 }}>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table className="table" style={{ margin: 0 }}>
                 <thead>
                   <tr>
@@ -828,7 +828,7 @@ export default function AdminDeliveryPage() {
             </h2>
           </div>
           <div className="card-body" style={{ padding: 0 }}>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table className="table" style={{ margin: 0 }}>
                 <thead>
                   <tr>

@@ -152,7 +152,7 @@ export default function OrderDetailsPage({ order, navigate }) {
         </div>
 
         {/* Details Grid */}
-        <div className="order-details-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '2rem', alignItems: 'start' }}>
+        <div className="order-details-layout">
           {/* Main Column */}
           <div className="order-details-main" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Timeline */}
