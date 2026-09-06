@@ -75,15 +75,43 @@ export async function getProfileByUserId(userId) {
 }
 
 export async function getCustomerProfile() {
-  const { data, error } = await supabase
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+  if (!user) return null;
+
+  // 1. Try finding customer by auth_user_id
+  const byAuth = await supabase
     .from('customers')
     .select('*')
-    // .eq('auth_user_id', auth.uid()) is enforced by RLS, but we can also limit to 1
-    .limit(1)
+    .eq('auth_user_id', user.id)
     .maybeSingle();
 
-  if (error) throw error;
-  return data || null;
+  if (byAuth.data) return byAuth.data;
+
+  // 2. Try finding by email
+  if (user.email) {
+    const byEmail = await supabase
+      .from('customers')
+      .select('*')
+      .eq('email', user.email)
+      .limit(1)
+      .maybeSingle();
+
+    if (byEmail.data) {
+      // Auto-link auth_user_id
+      try {
+        await supabase
+          .from('customers')
+          .update({ auth_user_id: user.id })
+          .eq('id', byEmail.data.id);
+      } catch {
+        // ignore if RLS restricts update
+      }
+      return byEmail.data;
+    }
+  }
+
+  return null;
 }
 
 export async function signUpWithPassword({ email, password }) {

@@ -37,8 +37,9 @@ import AdminLoginPage from './pages/admin/AdminLoginPage.jsx';
 import AdminAccessDeniedPage from './pages/admin/AdminAccessDeniedPage.jsx';
 import AdminPosPage from './pages/admin/offline/AdminPosPage.jsx';
 import AdminOfflineSalesPage from './pages/admin/offline/AdminOfflineSalesPage.jsx';
-import CustomerDebtPage from './pages/admin/offline/CustomerDebtPage.jsx';
 import AdminReturnsPage from './pages/admin/offline/AdminReturnsPage.jsx';
+import CustomerDebtPage from './pages/admin/offline/CustomerDebtPage.jsx';
+import AdminDeliveryPage from './pages/admin/AdminDeliveryPage.jsx';
 import { useAuth } from './hooks/useAuth.jsx';
 import { useLocalization } from './i18n/Localization.jsx';
 
@@ -88,6 +89,7 @@ function AdminRoute({ children, navigateShim }) {
   else if (location.pathname.includes('/products/new') || location.pathname.match(/\/products\/[^/]+/)) currentPage = 'admin-product-form';
   else if (location.pathname.includes('/products')) currentPage = 'admin-products';
   else if (location.pathname.includes('/catalog')) currentPage = 'admin-catalog';
+  else if (location.pathname.includes('/delivery')) currentPage = 'admin-delivery';
   else if (location.pathname.includes('/orders')) currentPage = 'admin-orders';
   else if (location.pathname.includes('/inventory')) currentPage = 'admin-inventory';
   else if (location.pathname.includes('/customers')) currentPage = 'admin-customers';
@@ -148,6 +150,7 @@ function App() {
       else routerNavigate('/admin/products/new');
     }
     else if (page === 'admin-catalog') routerNavigate('/admin/catalog');
+    else if (page === 'admin-delivery') routerNavigate('/admin/delivery');
     else if (page === 'admin-orders') routerNavigate('/admin/orders');
     else if (page === 'admin-inventory') routerNavigate('/admin/inventory');
     else if (page === 'admin-customers') routerNavigate('/admin/customers');
@@ -238,6 +241,7 @@ function App() {
           <Route path="/admin/products/new" element={<AdminRoute navigateShim={navigate}><AdminProductFormPage navigate={navigate} product={pageData?.product || null} /></AdminRoute>} />
           <Route path="/admin/products/:id" element={<AdminRoute navigateShim={navigate}><AdminProductFormPage navigate={navigate} product={pageData?.product || null} /></AdminRoute>} />
           <Route path="/admin/catalog" element={<AdminRoute navigateShim={navigate}><AdminCatalogPage navigate={navigate} /></AdminRoute>} />
+          <Route path="/admin/delivery" element={<AdminRoute navigateShim={navigate}><AdminDeliveryPage navigate={navigate} /></AdminRoute>} />
           <Route path="/admin/orders" element={<AdminRoute navigateShim={navigate}><AdminOrdersPage navigate={navigate} /></AdminRoute>} />
           <Route path="/admin/inventory" element={<AdminRoute navigateShim={navigate}><AdminInventoryPage navigate={navigate} /></AdminRoute>} />
           <Route path="/admin/customers" element={<AdminRoute navigateShim={navigate}><AdminCustomersPage navigate={navigate} /></AdminRoute>} />

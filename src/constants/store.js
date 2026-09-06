@@ -1,8 +1,12 @@
 export const STORE_INFO = {
   name: 'Al-Jafar Store',
-  nameAr: 'متجر الجعفر',
+  nameAr: 'مؤسسة الجعفر للأدوات الصحية والسباكة',
   address: 'Aswan, Egypt',
-  phone: '+966 50 123 4567',
-  hours: 'Sat - Thu: 8:00 AM - 8:00 PM\nFriday: 2:00 PM - 8:00 PM',
-  whatsapp: '+966501234567',
+  addressAr: 'أسوان، مصر',
+  phone: '+20 112 133 4488',
+  hours: 'Sat - Thu: 8:00 AM - 10:00 PM\nFriday: 2:00 PM - 10:00 PM',
+  hoursAr: 'السبت - الخميس: 8:00 ص - 10:00 م\nالجمعة: 2:00 م - 10:00 م',
+  whatsapp: '201121334488',
+  mapsUrl: 'https://maps.app.goo.gl/9QBeHgQukwjNaSr6A',
 };
+

@@ -31,6 +31,7 @@ const navGroups = [
   {
     title: 'MANAGEMENT',
     items: [
+      { id: 'admin-delivery', labelKey: 'deliveryManagement', label: 'Delivery Management', icon: '🚚' },
       { id: 'admin-catalog', labelKey: 'adminCatalog', icon: 'CB' }
     ]
   }

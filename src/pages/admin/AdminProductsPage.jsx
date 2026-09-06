@@ -8,7 +8,7 @@ import PrintBarcodesModal from './PrintBarcodesModal.jsx';
 
 export default function AdminProductsPage({ navigate }) {
   const { categories } = useCatalogOptions();
-  const { t, translateCategory, productName, productAltName } = useLocalization();
+  const { t, isArabic, translateCategory, productName, productAltName } = useLocalization();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -232,11 +232,22 @@ export default function AdminProductsPage({ navigate }) {
                       <p style={{ fontWeight: 600 }}>{productName(product)}</p>
                       <p className="arabic-text" lang="ar" dir="rtl" style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{productAltName(product)}</p>
                       <p style={{ fontSize: '0.75rem', color: 'var(--muted-light)' }}>{product.brand}</p>
-                      {product.active === false ? (
-                        <span className="badge badge-muted" style={{ marginTop: '0.35rem' }}>
-                          {t('unavailable')}
-                        </span>
-                      ) : null}
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                        {product.isDeliveryAvailable ? (
+                          <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>
+                            🚚 {product.deliveryClass ? product.deliveryClass.toUpperCase() : 'MEDIUM'}
+                          </span>
+                        ) : (
+                          <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>
+                            🏪 {isArabic ? 'استلام فقط' : 'Pickup Only'}
+                          </span>
+                        )}
+                        {product.active === false ? (
+                          <span className="badge badge-muted" style={{ fontSize: '0.7rem' }}>
+                            {t('unavailable')}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td><span className="sku-text">{product.sku}</span></td>
                     <td><span className="badge badge-muted">{translateCategory(product.category)}</span></td>

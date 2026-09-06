@@ -206,6 +206,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshCustomerProfile = async () => {
+    try {
+      const cust = await getCustomerProfile();
+      setCustomerProfile(cust);
+      return cust;
+    } catch (err) {
+      console.warn('Failed to refresh customer profile:', err);
+      return null;
+    }
+  };
+
   const isAdmin = profile?.role === 'admin';
   const value = {
     session,
@@ -219,6 +230,7 @@ export function AuthProvider({ children }) {
     signInWithPassword,
     signUpWithPassword,
     signOut,
+    refreshCustomerProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

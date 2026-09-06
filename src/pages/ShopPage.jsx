@@ -126,16 +126,70 @@ export default function ShopPage({ onAddToCart, navigate }) {
     updateFilter('page', 1);
   };
 
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    selectedCategory !== 'All' ||
+    selectedBrand !== 'All' ||
+    priceMin !== '' ||
+    priceMax !== '' ||
+    availability.length > 0
+  );
+
   return (
-    <div className="shop-page" style={{ paddingTop: '2rem' }}>
+    <div className="shop-page animate-fadeIn" style={{ paddingTop: '1.5rem', paddingBottom: '4rem' }}>
+      {/* Shop Modern Header Banner */}
+      <div className="container" style={{ marginBottom: '1.75rem' }}>
+        <div className="shop-header-card">
+          <div className="shop-header-content">
+            <span className="shop-header-kicker">
+              {isArabic ? 'معرض ومؤسسة الجعفر • أسوان، مصر' : 'Al-Jafar Store • Aswan, Egypt'}
+            </span>
+            <h1 className="shop-header-title">
+              {isArabic ? 'كتالوج مستلزمات السباكة والأدوات الصحية' : 'Sanitary Ware & Plumbing Tools Catalog'}
+            </h1>
+            <p className="shop-header-desc">
+              {isArabic 
+                ? 'تصفح أحدث الخلاطات، المحابس، أطقم الحمامات والمواسير بأعلى مواصفات الجودة والضمان في أسوان.' 
+                : 'Browse high-quality faucets, mixers, valves, and bathroom fixtures with certified quality and warranty in Aswan.'}
+            </p>
+          </div>
+          <div className="shop-header-metrics">
+            <div className="shop-metric-pill">
+              <span className="metric-val">{products.length}</span>
+              <span className="metric-lbl">{isArabic ? 'منتج متوفر' : 'Products'}</span>
+            </div>
+            <div className="shop-metric-pill">
+              <span className="metric-val">{categories.length - 1}</span>
+              <span className="metric-lbl">{isArabic ? 'أقسام رئيسية' : 'Categories'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="container">
         <div className="shop-layout">
+          {/* Mobile Overlay */}
+          {filtersOpen && (
+            <div className="sidebar-backdrop" onClick={() => setFiltersOpen(false)} />
+          )}
+
+          {/* Sidebar */}
           <aside className={`shop-sidebar ${filtersOpen ? 'open' : ''}`} aria-label="Shop filters">
             <div className="sidebar-header">
-              <h2 className="sidebar-title">{t('filters')}</h2>
-              <button className="btn btn-ghost btn-sm" onClick={resetFilters}>{t('clearAll')}</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+                <h2 className="sidebar-title" style={{ margin: 0 }}>{t('filters')}</h2>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {hasActiveFilters && (
+                  <button className="btn btn-ghost btn-sm" onClick={resetFilters}>{t('clearAll')}</button>
+                )}
+                {filtersOpen && (
+                  <button className="sidebar-close-btn" onClick={() => setFiltersOpen(false)}>✕</button>
+                )}
+              </div>
             </div>
+
             {catalogWarnings.length > 0 ? (
               <p style={{ color: 'var(--danger)', fontSize: '0.8125rem', marginBottom: '0.75rem' }}>
                 {catalogWarnings.join(' ')}
@@ -176,7 +230,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
             </div>
 
             <div className="filter-group">
-              <h3 className="filter-label">{t('priceRange')}</h3>
+              <h3 className="filter-label">{t('priceRange')} ({isArabic ? 'ج.م' : 'EGP'})</h3>
               <div className="price-range-inputs">
                 <input
                   className="input"
@@ -213,13 +267,24 @@ export default function ShopPage({ onAddToCart, navigate }) {
                 </label>
               ))}
             </div>
+
+            {filtersOpen && (
+              <button 
+                className="btn btn-primary w-full" 
+                style={{ marginTop: '1.5rem' }} 
+                onClick={() => setFiltersOpen(false)}
+              >
+                {isArabic ? 'تطبيق الفلاتر وتصفح النتائج' : 'Apply Filters'}
+              </button>
+            )}
           </aside>
 
           <main className="shop-main" id="main-content">
+            {/* Toolbar */}
             <div className="shop-toolbar">
               <div className="input-group shop-search">
                 <span className="input-icon" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </span>
                 <input
                   className="input"
@@ -229,10 +294,22 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   onChange={(event) => updateFilter('q', event.target.value)}
                   aria-label={t('searchProducts')}
                 />
+                {search && (
+                  <button 
+                    type="button" 
+                    className="search-toolbar-clear" 
+                    onClick={() => updateFilter('q', '')}
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
 
               <div className="toolbar-right">
-                <span className="results-count">{t('products', filtered.length)}</span>
+                <span className="results-count">
+                  <strong>{filtered.length}</strong> {filtered.length === 1 ? t('item') : t('items')}
+                </span>
                 <select
                   className="select sort-select"
                   value={sort}
@@ -249,13 +326,15 @@ export default function ShopPage({ onAddToCart, navigate }) {
                   aria-expanded={filtersOpen}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
-                  {t('filters')}
+                  <span>{t('filters')}</span>
+                  {hasActiveFilters && <span className="active-filter-badge-dot" />}
                 </button>
               </div>
             </div>
 
+            {/* Category Quick Pill Tabs */}
             <div className="category-tabs" role="tablist" aria-label={t('category')}>
-              {categories.slice(0, 7).map((cat) => (
+              {categories.map((cat) => (
                 <button
                   key={cat}
                   role="tab"
@@ -267,6 +346,55 @@ export default function ShopPage({ onAddToCart, navigate }) {
                 </button>
               ))}
             </div>
+
+            {/* Active Filter Chips Strip */}
+            {hasActiveFilters && (
+              <div className="active-filters-strip animate-fadeIn">
+                <span className="active-filters-title">{isArabic ? 'الفلاتر النشطة:' : 'Active Filters:'}</span>
+                
+                {search.trim() && (
+                  <span className="filter-chip">
+                    <span>{isArabic ? 'بحث:' : 'Search:'} "{search}"</span>
+                    <button onClick={() => updateFilter('q', '')} aria-label="Remove search filter">✕</button>
+                  </span>
+                )}
+
+                {selectedCategory !== 'All' && (
+                  <span className="filter-chip">
+                    <span>{isArabic ? 'القسم:' : 'Category:'} {translateCategory(selectedCategory)}</span>
+                    <button onClick={() => updateFilter('category', 'All')} aria-label="Remove category filter">✕</button>
+                  </span>
+                )}
+
+                {selectedBrand !== 'All' && (
+                  <span className="filter-chip">
+                    <span>{isArabic ? 'الماركة:' : 'Brand:'} {selectedBrand}</span>
+                    <button onClick={() => updateFilter('brand', 'All')} aria-label="Remove brand filter">✕</button>
+                  </span>
+                )}
+
+                {(priceMin !== '' || priceMax !== '') && (
+                  <span className="filter-chip">
+                    <span>
+                      {isArabic ? 'السعر:' : 'Price:'} {priceMin || 0} - {priceMax || '∞'} {isArabic ? 'ج.م' : 'EGP'}
+                    </span>
+                    <button onClick={() => { updateFilter('min', ''); updateFilter('max', ''); }} aria-label="Remove price filter">✕</button>
+                  </span>
+                )}
+
+                {availability.map((opt) => (
+                  <span key={opt} className="filter-chip">
+                    <span>{translateStock(opt)}</span>
+                    <button onClick={() => toggleAvailability(opt)} aria-label={`Remove ${opt} filter`}>✕</button>
+                  </span>
+                ))}
+
+                <button className="clear-all-chip-btn" onClick={resetFilters}>
+                  {isArabic ? 'مسح الكل' : 'Clear All'}
+                </button>
+              </div>
+            )}
+
 
             {loading ? (
               <EmptyState icon="..." title={t('loadingProducts')} description={t('loadingProducts')} />

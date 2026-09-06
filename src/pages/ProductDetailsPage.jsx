@@ -110,6 +110,36 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
     ['Warranty', current.specs?.warranty],
   ].filter(([, val]) => val);
 
+  const [added, setAdded] = useState(false);
+  const [selectedImg, setSelectedImg] = useState(current?.image || '');
+
+  // Keep selected image in sync if current changes
+  useEffect(() => {
+    if (current?.image) {
+      setSelectedImg(current.image);
+    }
+  }, [current]);
+
+  const galleryImages = useMemo(() => {
+    if (Array.isArray(current.images) && current.images.length > 0) {
+      return current.images;
+    }
+    if (Array.isArray(current.gallery) && current.gallery.length > 0) {
+      return current.gallery;
+    }
+    return [current.image];
+  }, [current]);
+
+  const handleAddToCart = () => {
+    onAddToCart(current, qty);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
+  const whatsappMessage = isArabic
+    ? `مرحباً متجر الجعفر، أود الاستفسار عن المنتج: ${current.nameAr || current.nameEn} (كود: ${current.sku}) بسعر ${current.price} ج.م`
+    : `Hello Al-Jafar Store, I'd like to inquire about: ${current.nameEn} (SKU: ${current.sku}) priced at EGP ${current.price}`;
+
   return (
     <div className="pdp-page animate-fadeIn">
       <div className="container">
@@ -118,7 +148,9 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
             <button className="breadcrumb-link" onClick={() => navigate('shop')}>{t('shop')}</button>
           </div>
           <div className="breadcrumb-item">
-            <button className="breadcrumb-link" onClick={() => navigate('shop')}>{translateCategory(current.category)}</button>
+            <button className="breadcrumb-link" onClick={() => navigate('shop', { category: current.category })}>
+              {translateCategory(current.category)}
+            </button>
           </div>
           <div className="breadcrumb-item">
             <span className="breadcrumb-current">{productName(current)}</span>
@@ -126,19 +158,38 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
         </nav>
 
         <div className="pdp-main">
+          {/* Image Showcase Panel */}
           <div className="pdp-image-panel">
             <div className="pdp-image-frame">
-              <img src={current.image} alt={productName(current)} />
+              <img 
+                src={selectedImg || current.image} 
+                alt={productName(current)} 
+                onError={(e) => { e.target.src = '/images/transparentlogo.png'; }}
+              />
+              {current.featured && (
+                <span className="pdp-featured-tag">★ {t('featured')}</span>
+              )}
             </div>
-            <div className="pdp-thumbnails" aria-label={t('productImages')}>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className={`pdp-thumb ${i === 1 ? 'active' : ''}`}>
-                  <img src={current.image} alt={`${productName(current)} ${i}`} />
-                </div>
-              ))}
-            </div>
+
+            {/* Render thumbnails only when multiple images exist */}
+            {galleryImages.length > 1 && (
+              <div className="pdp-thumbnails" aria-label={t('productImages')}>
+                {galleryImages.map((imgUrl, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`pdp-thumb ${selectedImg === imgUrl ? 'active' : ''}`}
+                    onClick={() => setSelectedImg(imgUrl)}
+                    aria-label={`View image ${index + 1}`}
+                  >
+                    <img src={imgUrl} alt={`${productName(current)} ${index + 1}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* Details Panel */}
           <div className="pdp-details-panel">
             <div className="pdp-badges">
               <span className="badge badge-muted">{translateCategory(current.category)}</span>
@@ -146,7 +197,9 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
             </div>
 
             <h1 className="pdp-title">{productName(current)}</h1>
-            <p className="pdp-title-ar arabic-text" lang={isArabic ? 'en' : 'ar'} dir={isArabic ? 'ltr' : 'rtl'}>{productAltName(current)}</p>
+            <p className="pdp-title-ar arabic-text" lang={isArabic ? 'en' : 'ar'} dir={isArabic ? 'ltr' : 'rtl'}>
+              {productAltName(current)}
+            </p>
 
             <div className="pdp-meta-row">
               <div className="pdp-meta-item">
@@ -168,8 +221,9 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
             </div>
 
             <div className="pdp-price">
-              <span className="pdp-price-currency">EGP</span>
-              <span className="pdp-price-amount">{current.price.toFixed(2)}</span>
+              <span className="pdp-price-currency">{isArabic ? 'ج.م' : 'EGP'}</span>
+              <span className="pdp-price-amount">{Number(current.price).toFixed(0)}</span>
+              <span className="pdp-price-decimal">.{((Number(current.price) % 1) * 100).toFixed(0).padStart(2, '0')}</span>
             </div>
 
             {!cannotPurchase ? (
@@ -183,18 +237,27 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
                     aria-labelledby="qty-label"
                     onLimitReached={(maxVal) => {
                       const msg = isArabic 
-                        ? `الحد الأقصى المتاح هو ${maxVal}. إذا كنت بحاجة إلى المزيد، يرجى التواصل معنا عبر واتساب لترتيب ذلك.`
-                        : `The maximum you can get is ${maxVal}. If you need more, please contact us on WhatsApp to arrange it.`;
+                        ? `الحد الأقصى المتاح هو ${maxVal}. إذا كنت بحاجة إلى كميات أكبر لمشروعك، يرجى التواصل معنا عبر واتساب.`
+                        : `The maximum available is ${maxVal}. If you need higher quantities for your project, please contact us on WhatsApp.`;
                       window.alert(msg);
                     }}
                   />
                 </div>
                 <button
-                  className="btn btn-primary btn-lg pdp-add-btn"
-                  onClick={() => onAddToCart(current, qty)}
+                  className={`btn btn-lg pdp-add-btn ${added ? 'btn-success added-pulse' : 'btn-primary'}`}
+                  onClick={handleAddToCart}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                  {t('addToCart')}
+                  {added ? (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span>{isArabic ? 'تمت الإضافة للسلة ✓' : 'Added to Cart ✓'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                      <span>{t('addToCart')} ({qty})</span>
+                    </>
+                  )}
                 </button>
               </div>
             ) : (
@@ -203,22 +266,50 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
                   {unavailableOnline ? (isArabic ? 'غير متاح للبيع عبر الإنترنت' : 'Not available for online sale') : t('outOfStockLong')}
                 </span>
                 <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
-                  {unavailableOnline ? (isArabic ? 'هذا المنتج متاح فقط في المتجر الفعلي.' : 'This product is only available in-store.') : t('restockContact')}
+                  {unavailableOnline ? (isArabic ? 'هذا المنتج متاح فقط في مقر المتجر في أسوان.' : 'This product is only available in-store in Aswan.') : t('restockContact')}
                 </p>
               </div>
             )}
 
+            {/* Direct WhatsApp Action */}
             <a
-              href={`https://wa.me/${STORE_INFO.whatsapp}?text=Hello, I'd like to inquire about: ${current.nameEn} (SKU: ${current.sku})`}
+              href={`https://wa.me/${STORE_INFO.whatsapp}?text=${encodeURIComponent(whatsappMessage)}`}
               className="btn btn-outline whatsapp-btn"
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${t('whatsappInquiry')} ${productName(current)}`}
             >
-              {t('whatsappInquiry')}
+              <span>💬</span>
+              <span>{isArabic ? 'استفسار فوري عبر واتساب المتجر' : t('whatsappInquiry')}</span>
             </a>
+
+            {/* Aswan Store Guarantees Card */}
+            <div className="pdp-trust-card">
+              <div className="pdp-trust-row">
+                <div className="trust-icon-box">📍</div>
+                <div>
+                  <strong>{isArabic ? 'معرضنا في أسوان' : 'Aswan Showroom Pickup'}</strong>
+                  <p>{isArabic ? 'إمكانية الاستلام الفوري والفحص داخل المعرض' : 'Direct pickup & showroom inspection'}</p>
+                </div>
+              </div>
+              <div className="pdp-trust-row">
+                <div className="trust-icon-box">🚚</div>
+                <div>
+                  <strong>{isArabic ? 'توصيل سريع لكافة مناطق أسوان' : 'Fast Delivery in Aswan'}</strong>
+                  <p>{isArabic ? 'توصيل حتى باب المنزل أو موقع التشطيب' : 'Delivery to your door or project site'}</p>
+                </div>
+              </div>
+              <div className="pdp-trust-row">
+                <div className="trust-icon-box">💵</div>
+                <div>
+                  <strong>{isArabic ? 'الدفع عند الاستلام والمعاينة' : 'Cash on Delivery & Inspection'}</strong>
+                  <p>{isArabic ? 'افحص المنتج وتأكد من سلامته قبل الدفع' : 'Inspect your items before paying'}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
 
         <div className="pdp-info">
           <div className="pdp-info-col">

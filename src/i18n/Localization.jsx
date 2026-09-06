@@ -239,6 +239,23 @@ const messages = {
     areaDistrict: 'المنطقة / الحي',
     streetAddress: 'العنوان التفصيلي',
     deliveryNotes: 'ملاحظات التوصيل',
+    deliveryManagement: 'إدارة التوصيل',
+    deliveryClasses: 'فئات التوصيل',
+    governorates: 'المحافظات',
+    areas: 'المناطق',
+    deliveryRates: 'أسعار التوصيل',
+    pricingMatrix: 'مصفوفة الأسعار',
+    deliveryAvailable: 'التوصيل متاح',
+    pickupAvailable: 'الاستلام من المعرض متاح',
+    deliveryClass: 'فئة التوصيل',
+    dominantDeliveryClass: 'فئة التوصيل السائدة',
+    deliveryRequiresManualQuote: 'عرض سعر يدوي للتوصيل',
+    deliveryNotAvailableInArea: 'التوصيل غير متاح حاليًا لهذه المنطقة.',
+    productPickupOnly: 'هذا المنتج متاح للاستلام من المعرض فقط.',
+    manualQuoteNotice: 'سيتم تأكيد رسوم التوصيل من فريقنا',
+    provisionalTotal: 'الإجمالي المبدئي',
+    selectGovernorateAndArea: 'يرجى اختيار المحافظة والمنطقة لحساب التوصيل',
+    deliveryClassRequired: 'يرجى اختيار فئة التوصيل للمنتج طالما أن التوصيل متاح.',
     pickupReadyPhone: (phone) => `سنتواصل معك على ${phone || 'رقم الهاتف'} عندما يكون الطلب جاهزاً للاستلام.`,
     cashOnDelivery: 'الدفع عند الاستلام',
     cashOnDeliveryOnly: 'الدفع عند الاستلام فقط',
@@ -621,6 +638,23 @@ messages.en = {
   productLines: '15 product lines',
   codOnly: 'Cash on Delivery only',
   pickupFromShop: 'Pickup from Shop',
+  deliveryManagement: 'Delivery Management',
+  deliveryClasses: 'Delivery Classes',
+  governorates: 'Governorates',
+  areas: 'Areas',
+  deliveryRates: 'Delivery Rates',
+  pricingMatrix: 'Pricing Matrix',
+  deliveryAvailable: 'Delivery Available',
+  pickupAvailable: 'Pickup Available',
+  deliveryClass: 'Delivery Class',
+  dominantDeliveryClass: 'Dominant Delivery Class',
+  deliveryRequiresManualQuote: 'Delivery Requires Manual Quote',
+  deliveryNotAvailableInArea: 'Delivery is not currently available for this area.',
+  productPickupOnly: 'This product is available for showroom pickup only.',
+  manualQuoteNotice: 'Delivery fee will be confirmed by our team',
+  provisionalTotal: 'Provisional Total',
+  selectGovernorateAndArea: 'Please select governorate and area to calculate delivery',
+  deliveryClassRequired: 'Please select a delivery class since delivery is enabled.',
   filters: 'Filters',
   clearAll: 'Clear All',
   category: 'Category',
@@ -1090,6 +1124,37 @@ export function LocalizationProvider({ children }) {
                 ? `المنتج غير متاح للبيع: ${parsed.details.productName}`
                 : `Product not available for sale: ${parsed.details.productName}`;
             }
+            if (parsed.code === 'PRODUCT_NOT_DELIVERABLE') {
+              const name = parsed.details?.productName;
+              return isArabic
+                ? `المنتج (${name || 'المحدد'}) متاح للاستلام من المعرض فقط ولا يدعم التوصيل.`
+                : `Product (${name || 'selected'}) is available for showroom pickup only.`;
+            }
+            if (parsed.code === 'DELIVERY_RATE_NOT_FOUND' || parsed.code === 'DELIVERY_NOT_AVAILABLE') {
+              return isArabic
+                ? 'التوصيل غير متاح حاليًا لهذه المنطقة.'
+                : 'Delivery is not currently available for this area.';
+            }
+            if (parsed.code === 'AREA_NOT_IN_GOVERNORATE') {
+              return isArabic
+                ? 'المنطقة المحددة لا تنتمي إلى المحافظة المختارة.'
+                : 'Selected area does not belong to the chosen governorate.';
+            }
+            if (parsed.code === 'GOVERNORATE_NOT_FOUND') {
+              return isArabic
+                ? 'يرجى اختيار محافظة صالحة للتوصيل.'
+                : 'Please select a valid governorate.';
+            }
+            if (parsed.code === 'AREA_NOT_FOUND') {
+              return isArabic
+                ? 'يرجى اختيار منطقة صالحة للتوصيل.'
+                : 'Please select a valid delivery area.';
+            }
+            if (parsed.code === 'INVALID_DELIVERY_CLASS') {
+              return isArabic
+                ? 'فئة التوصيل غير محددة أو غير صالحة للمنتج.'
+                : 'Product delivery class is not configured.';
+            }
             return translated;
           }
           return parsed.message || t('ERR_UNKNOWN');
@@ -1122,8 +1187,11 @@ export function LocalizationProvider({ children }) {
       productAltName,
       productDescription,
       customerStatus,
-      timelineStep,
       parseRpcError,
+      formatCurrency: (amount) => {
+        const num = Number(amount || 0);
+        return isArabic ? `${num.toFixed(2)} ج.م` : `EGP ${num.toFixed(2)}`;
+      },
     };
   }, [language]);
 

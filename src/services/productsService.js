@@ -39,7 +39,34 @@ export async function generateUniqueBarcode() {
   return newBarcode;
 }
 
-export function selectProductsQuery() {
+let deliveryColumnsSupported = true;
+
+function isColumnMissingError(err) {
+  const full = `${err?.message || ''} ${err?.details || ''} ${err?.hint || ''}`.toLowerCase();
+  return (
+    full.includes('delivery_class') ||
+    full.includes('is_delivery_available') ||
+    full.includes('is_pickup_available') ||
+    err?.code === '42703' ||
+    err?.code === 'PGRST204'
+  );
+}
+
+async function safeProductQuery(queryExecutor) {
+  try {
+    return await queryExecutor(!deliveryColumnsSupported);
+  } catch (err) {
+    if (isColumnMissingError(err)) {
+      console.warn('[productsService] delivery columns not yet present in database, falling back gracefully.');
+      deliveryColumnsSupported = false;
+      return await queryExecutor(true);
+    }
+    throw err;
+  }
+}
+
+export function selectProductsQuery(forceWithoutDelivery = false) {
+  const includeDelivery = deliveryColumnsSupported && !forceWithoutDelivery;
   return `
     id,
     category_id,
@@ -66,6 +93,7 @@ export function selectProductsQuery() {
     is_featured,
     available_online,
     available_offline,
+    ${includeDelivery ? 'delivery_class, is_delivery_available, is_pickup_available,' : ''}
     created_at,
     updated_at,
     categories:category_id (
@@ -110,6 +138,9 @@ export function normalizeProduct(row) {
     active: row.is_active !== false,
     availableOnline: row.available_online !== false,
     availableOffline: row.available_offline !== false,
+    deliveryClass: row.delivery_class || null,
+    isDeliveryAvailable: row.is_delivery_available === true,
+    isPickupAvailable: row.is_pickup_available !== false,
     createdAt: row.created_at || null,
     updatedAt: row.updated_at || null,
   };
@@ -139,7 +170,7 @@ async function toDbPayload(payload) {
     categoryName: payload.category,
   });
 
-  return {
+  const base = {
     category_id: categoryId,
     name_en: payload.nameEn?.trim() || '',
     name_ar: payload.nameAr?.trim() || '',
@@ -165,106 +196,126 @@ async function toDbPayload(payload) {
     available_online: payload.availableOnline !== false,
     available_offline: payload.availableOffline !== false,
   };
+
+  if (deliveryColumnsSupported) {
+    base.delivery_class = payload.isDeliveryAvailable ? (payload.deliveryClass || 'medium') : null;
+    base.is_delivery_available = Boolean(payload.isDeliveryAvailable);
+    base.is_pickup_available = payload.isPickupAvailable !== false;
+  }
+
+  return base;
 }
 
 export async function listStoreProducts() {
-  const { data, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select(selectProductsQuery())
-    .eq('is_active', true)
-    .eq('available_online', true)
-    .order('created_at', { ascending: false });
+  return safeProductQuery(async (forceWithoutDelivery = false) => {
+    const { data, error } = await supabase
+      .from(PRODUCTS_TABLE)
+      .select(selectProductsQuery(forceWithoutDelivery))
+      .eq('is_active', true)
+      .eq('available_online', true)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data || []).map(normalizeProduct);
+    if (error) throw error;
+    return (data || []).map(normalizeProduct);
+  });
 }
 
 export async function getFeaturedProducts(limit = 8) {
-  const { data, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select(selectProductsQuery())
-    .eq('is_active', true)
-    .eq('available_online', true)
-    .eq('is_featured', true)
-    .limit(limit)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  
-  // If fewer than requested are returned, fallback to general active products
-  if (!data || data.length < limit) {
-    const fallbackLimit = limit - (data ? data.length : 0);
-    const existingIds = data ? data.map(p => p.id) : [];
-    
-    let fallbackQuery = supabase
+  return safeProductQuery(async (forceWithoutDelivery = false) => {
+    const { data, error } = await supabase
       .from(PRODUCTS_TABLE)
-      .select(selectProductsQuery())
+      .select(selectProductsQuery(forceWithoutDelivery))
       .eq('is_active', true)
-      .eq('available_online', true);
-      
-    if (existingIds.length > 0) {
-      fallbackQuery = fallbackQuery.not('id', 'in', `(${existingIds.join(',')})`);
-    }
-    
-    const { data: fallbackData, error: fallbackError } = await fallbackQuery
-      .limit(fallbackLimit)
+      .eq('available_online', true)
+      .eq('is_featured', true)
+      .limit(limit)
       .order('created_at', { ascending: false });
-      
-    if (!fallbackError && fallbackData) {
-      return [...(data || []), ...fallbackData].map(normalizeProduct);
-    }
-  }
 
-  return (data || []).map(normalizeProduct);
+    if (error) throw error;
+    
+    // If fewer than requested are returned, fallback to general active products
+    if (!data || data.length < limit) {
+      const fallbackLimit = limit - (data ? data.length : 0);
+      const existingIds = data ? data.map(p => p.id) : [];
+      
+      let fallbackQuery = supabase
+        .from(PRODUCTS_TABLE)
+        .select(selectProductsQuery(forceWithoutDelivery))
+        .eq('is_active', true)
+        .eq('available_online', true);
+        
+      if (existingIds.length > 0) {
+        fallbackQuery = fallbackQuery.not('id', 'in', `(${existingIds.join(',')})`);
+      }
+      
+      const { data: fallbackData, error: fallbackError } = await fallbackQuery
+        .limit(fallbackLimit)
+        .order('created_at', { ascending: false });
+        
+      if (!fallbackError && fallbackData) {
+        return [...(data || []), ...fallbackData].map(normalizeProduct);
+      }
+    }
+
+    return (data || []).map(normalizeProduct);
+  });
 }
 
 export async function getStoreProductById(id) {
-  const { data, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select(selectProductsQuery())
-    .eq('id', id)
-    .eq('is_active', true)
-    .maybeSingle();
+  return safeProductQuery(async (forceWithoutDelivery = false) => {
+    const { data, error } = await supabase
+      .from(PRODUCTS_TABLE)
+      .select(selectProductsQuery(forceWithoutDelivery))
+      .eq('id', id)
+      .eq('is_active', true)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data ? normalizeProduct(data) : null;
+    if (error) throw error;
+    return data ? normalizeProduct(data) : null;
+  });
 }
 
 export async function getRelatedStoreProducts({ categoryId, excludeId, limit = 4 }) {
   if (!categoryId) return [];
 
-  const { data, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select(selectProductsQuery())
-    .eq('is_active', true)
-    .eq('category_id', categoryId)
-    .neq('id', excludeId)
-    .limit(limit)
-    .order('created_at', { ascending: false });
+  return safeProductQuery(async (forceWithoutDelivery = false) => {
+    const { data, error } = await supabase
+      .from(PRODUCTS_TABLE)
+      .select(selectProductsQuery(forceWithoutDelivery))
+      .eq('is_active', true)
+      .eq('category_id', categoryId)
+      .neq('id', excludeId)
+      .limit(limit)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data || []).map(normalizeProduct);
+    if (error) throw error;
+    return (data || []).map(normalizeProduct);
+  });
 }
 
 export async function listAdminProducts() {
-  const { data, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select(selectProductsQuery())
-    .order('created_at', { ascending: false });
+  return safeProductQuery(async (forceWithoutDelivery = false) => {
+    const { data, error } = await supabase
+      .from(PRODUCTS_TABLE)
+      .select(selectProductsQuery(forceWithoutDelivery))
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return (data || []).map(normalizeProduct);
+    if (error) throw error;
+    return (data || []).map(normalizeProduct);
+  });
 }
 
 export async function getAdminProductById(id) {
-  const { data, error } = await supabase
-    .from(PRODUCTS_TABLE)
-    .select(selectProductsQuery())
-    .eq('id', id)
-    .maybeSingle();
+  return safeProductQuery(async (forceWithoutDelivery = false) => {
+    const { data, error } = await supabase
+      .from(PRODUCTS_TABLE)
+      .select(selectProductsQuery(forceWithoutDelivery))
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error) throw error;
-  return data ? normalizeProduct(data) : null;
+    if (error) throw error;
+    return data ? normalizeProduct(data) : null;
+  });
 }
 
 export async function createAdminProduct(payload) {

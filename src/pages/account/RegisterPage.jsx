@@ -3,14 +3,14 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useLocalization } from '../../i18n/Localization.jsx';
 import { registerCustomerProfile } from '../../services/authService.js';
 
-const InputField = ({ label, type = "text", value, onChange, required, placeholder, icon, isArabic }) => (
+const InputField = ({ label, type = "text", value, onChange, required, placeholder, icon, isArabic, rightAction }) => (
   <div>
-    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
-      {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+      {label} {required && <span style={{ color: 'var(--danger)' }}>*</span>}
     </label>
     <div style={{ position: 'relative' }}>
       {icon && (
-        <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: isArabic ? 'auto' : '1rem', right: isArabic ? '1rem' : 'auto', color: '#94a3b8' }}>
+        <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: isArabic ? 'auto' : '1rem', right: isArabic ? '1rem' : 'auto', color: '#94A3B8', display: 'flex', alignItems: 'center' }}>
           {icon}
         </span>
       )}
@@ -21,13 +21,27 @@ const InputField = ({ label, type = "text", value, onChange, required, placehold
         required={required} 
         placeholder={placeholder}
         style={{ 
-          width: '100%', padding: icon ? (isArabic ? '0.75rem 3rem 0.75rem 1rem' : '0.75rem 1rem 0.75rem 3rem') : '0.75rem 1rem',
-          background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px',
-          fontSize: '1rem', color: '#0f172a', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box'
+          width: '100%',
+          padding: icon
+            ? (rightAction ? '0.75rem 3rem' : (isArabic ? '0.75rem 3rem 0.75rem 1rem' : '0.75rem 1rem 0.75rem 3rem'))
+            : (rightAction ? (isArabic ? '0.75rem 3rem 0.75rem 1rem' : '0.75rem 1rem 0.75rem 3rem') : '0.75rem 1rem'),
+          background: '#F8FAFC',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: '0.95rem',
+          color: 'var(--text-primary)',
+          outline: 'none',
+          transition: 'all 0.2s',
+          boxSizing: 'border-box'
         }}
-        onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(14, 165, 233, 0.1)'; e.target.style.background = '#ffffff'; }}
-        onBlur={e => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'none'; e.target.style.background = '#f8fafc'; }}
+        onFocus={e => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(14, 165, 233, 0.15)'; e.target.style.background = '#FFFFFF'; }}
+        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; e.target.style.background = '#F8FAFC'; }}
       />
+      {rightAction && (
+        <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: isArabic ? '1rem' : 'auto', right: isArabic ? 'auto' : '1rem', display: 'flex', alignItems: 'center' }}>
+          {rightAction}
+        </div>
+      )}
     </div>
   </div>
 );
@@ -41,11 +55,12 @@ export default function RegisterPage({ navigate }) {
     password: '',
     full_name: '',
     phone: '',
-    city: '',
+    city: 'أسوان',
     area: '',
     address: ''
   });
   
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -80,30 +95,46 @@ export default function RegisterPage({ navigate }) {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      background: 'radial-gradient(circle at 50% 10%, rgba(14, 165, 233, 0.08), transparent 60%), linear-gradient(180deg, #F8FAFC 0%, var(--bg) 100%)',
       padding: '3rem 1rem'
     }}>
       <div style={{
-        background: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '24px',
-        boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.05)',
+        background: 'var(--card)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: '0 25px 50px -12px rgba(13, 26, 34, 0.12)',
         width: '100%',
-        maxWidth: '600px',
+        maxWidth: '620px',
         overflow: 'hidden',
-        border: '1px solid rgba(255, 255, 255, 0.5)'
+        border: '1px solid var(--border)'
       }}>
+        {/* Top Gradient */}
+        <div style={{ height: '5px', background: 'linear-gradient(90deg, var(--primary), var(--accent))' }}></div>
         
         {/* Header Section */}
-        <div style={{ padding: '2.5rem 2.5rem 1.5rem', textAlign: 'center', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '16px', background: 'var(--primary-light, #e0f2fe)', color: 'var(--primary, #0ea5e9)', marginBottom: '1.5rem' }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+        <div style={{ padding: '2.5rem 2.5rem 1.5rem', textAlign: 'center', borderBottom: '1px solid var(--border-light)' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '64px',
+            height: '64px',
+            borderRadius: '16px',
+            background: 'rgba(14, 165, 233, 0.1)',
+            color: 'var(--primary)',
+            marginBottom: '1.25rem'
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" x2="19" y1="8" y2="14"/>
+              <line x1="22" x2="16" y1="11" y2="11"/>
+            </svg>
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem', letterSpacing: '-0.03em' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.5rem', letterSpacing: '-0.02em' }}>
             {isArabic ? 'إنشاء حساب جديد' : 'Create an Account'}
           </h1>
-          <p style={{ color: '#64748b', fontSize: '1rem', margin: 0 }}>
-            {isArabic ? 'انضم إلينا للاستمتاع بتجربة تسوق فريدة' : 'Join us to enjoy a seamless shopping experience'}
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0 }}>
+            {isArabic ? 'انضم إلى عملاء مؤسسة الجعفر للأدوات الصحية في أسوان' : 'Join Al-Jafar Sanitary Store family in Aswan'}
           </p>
         </div>
 
@@ -117,7 +148,9 @@ export default function RegisterPage({ navigate }) {
                 value={formData.full_name} 
                 onChange={e => setFormData({ ...formData, full_name: e.target.value })} 
                 required 
-                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
+                placeholder={isArabic ? 'مثال: أحمد عبد الله' : 'e.g. John Doe'}
+                isArabic={isArabic}
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
               />
               <InputField 
                 label={t('phone')} 
@@ -125,7 +158,9 @@ export default function RegisterPage({ navigate }) {
                 value={formData.phone} 
                 onChange={e => setFormData({ ...formData, phone: e.target.value })} 
                 required 
-                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>}
+                placeholder="01012345678"
+                isArabic={isArabic}
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>}
               />
             </div>
             
@@ -136,94 +171,129 @@ export default function RegisterPage({ navigate }) {
                 value={formData.email} 
                 onChange={e => setFormData({ ...formData, email: e.target.value })} 
                 required 
-                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>}
+                placeholder="name@example.com"
+                isArabic={isArabic}
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>}
               />
               <InputField 
                 label={isArabic ? 'كلمة المرور' : 'Password'} 
-                type="password"
+                type={showPassword ? 'text' : 'password'} 
                 value={formData.password} 
                 onChange={e => setFormData({ ...formData, password: e.target.value })} 
                 required 
-                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>}
+                placeholder="••••••••"
+                isArabic={isArabic}
+                icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>}
+                rightAction={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  >
+                    {showPassword ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    )}
+                  </button>
+                }
               />
             </div>
             
-            <hr style={{ border: 'none', borderTop: '1px dashed #cbd5e1', margin: '0.5rem 0' }} />
-            <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, margin: 0 }}>
-              {isArabic ? 'معلومات التوصيل (اختياري)' : 'Delivery Information (Optional)'}
-            </p>
+            <div style={{ padding: '0.75rem 1rem', background: '#F8FAFC', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border)' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 700, margin: '0 0 0.5rem' }}>
+                📍 {isArabic ? 'عنوان التوصيل في أسوان (اختياري)' : 'Delivery Address in Aswan (Optional)'}
+              </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <InputField 
+                  label={isArabic ? 'المركز / المدينة' : 'City / Center'} 
+                  value={formData.city} 
+                  onChange={e => setFormData({ ...formData, city: e.target.value })} 
+                  placeholder={isArabic ? 'أسوان، كوم أمبو، دراو، إدفو...' : 'Aswan, Kom Ombo, Edfu...'}
+                  isArabic={isArabic}
+                />
+                <InputField 
+                  label={isArabic ? 'المنطقة / الحي' : 'Area / District'} 
+                  value={formData.area} 
+                  onChange={e => setFormData({ ...formData, area: e.target.value })} 
+                  placeholder={isArabic ? 'المحمودية، الكورنيش، السيل...' : 'Neighborhood'}
+                  isArabic={isArabic}
+                />
+              </div>
+
               <InputField 
-                label={isArabic ? 'المدينة / المحافظة' : 'City / Governorate'} 
-                value={formData.city} 
-                onChange={e => setFormData({ ...formData, city: e.target.value })} 
-                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>}
-              />
-              <InputField 
-                label={isArabic ? 'المنطقة' : 'Area / Neighborhood'} 
-                value={formData.area} 
-                onChange={e => setFormData({ ...formData, area: e.target.value })} 
-                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+                label={isArabic ? 'الشارع وعلامة مميزة' : 'Street & Landmark'} 
+                value={formData.address} 
+                onChange={e => setFormData({ ...formData, address: e.target.value })} 
+                placeholder={isArabic ? 'اسم الشارع، رقم العقار أو أقرب معلم' : 'Street name, building or nearby landmark'}
+                isArabic={isArabic}
               />
             </div>
-
-            <InputField 
-              label={isArabic ? 'العنوان بالتفصيل' : 'Detailed Address'} 
-              value={formData.address} 
-              onChange={e => setFormData({ ...formData, address: e.target.value })} 
-            />
             
             {error && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', fontSize: '0.875rem', fontWeight: 500 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-                {error}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius-sm)', color: '#DC2626', fontSize: '0.875rem', fontWeight: 500 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{error}</span>
               </div>
             )}
             
             <button 
               type="submit" 
               disabled={loading}
+              className="btn btn-primary"
               style={{
-                marginTop: '1rem',
+                marginTop: '0.5rem',
                 width: '100%',
-                padding: '1.25rem',
-                fontSize: '1.1rem',
+                padding: '0.9rem',
+                fontSize: '1rem',
                 fontWeight: 700,
-                color: '#ffffff',
-                background: 'var(--primary)',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)',
-                transition: 'all 0.2s',
-                opacity: loading ? 0.8 : 1
+                borderRadius: 'var(--radius-md)',
+                boxShadow: '0 4px 14px rgba(14, 165, 233, 0.3)'
               }}
-              onMouseOver={(e) => { if(!loading) { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 16px rgba(14, 165, 233, 0.4)'; } }}
-              onMouseOut={(e) => { if(!loading) { e.target.style.transform = 'none'; e.target.style.boxShadow = '0 4px 12px rgba(14, 165, 233, 0.3)'; } }}
             >
-              {loading ? t('saving') : (isArabic ? 'إنشاء حساب' : 'Create Account')}
+              {loading ? (
+                <>
+                  <span className="spinner-mini" aria-hidden="true"></span>
+                  <span>{t('saving')}</span>
+                </>
+              ) : (
+                isArabic ? 'إنشاء الحساب' : 'Create Account'
+              )}
             </button>
           </form>
           
-          <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-            <span style={{ color: '#64748b', fontSize: '0.95rem' }}>
-              {isArabic ? 'لديك حساب بالفعل؟' : 'Already have an account?'}
-            </span>
-            <button 
-              style={{ 
-                background: 'transparent', border: 'none', color: 'var(--primary)', fontWeight: 700, 
-                fontSize: '0.95rem', cursor: 'pointer', padding: '0 0.5rem', textDecoration: 'none'
+          <div style={{ marginTop: '2rem', textAlign: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                {isArabic ? 'لديك حساب بالفعل؟' : 'Already have an account?'}{' '}
+              </span>
+              <button 
+                style={{ 
+                  background: 'transparent', border: 'none', color: 'var(--primary)', fontWeight: 700, 
+                  fontSize: '0.95rem', cursor: 'pointer', padding: '0 0.25rem', textDecoration: 'underline'
+                }}
+                onClick={() => navigate('login')}
+              >
+                {isArabic ? 'سجل دخولك هنا' : 'Sign in here'}
+              </button>
+            </div>
+
+            <button
+              onClick={() => navigate('home')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem'
               }}
-              onClick={() => navigate('login')}
-              onMouseOver={e => e.target.style.textDecoration = 'underline'}
-              onMouseOut={e => e.target.style.textDecoration = 'none'}
             >
-              {isArabic ? 'تسجيل الدخول' : 'Sign in here'}
+              <span>{isArabic ? '← العودة للصفحة الرئيسية' : '← Back to Store'}</span>
             </button>
           </div>
         </div>

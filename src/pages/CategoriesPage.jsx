@@ -4,7 +4,7 @@ import useCatalogOptions from '../hooks/useCatalogOptions.js';
 import './categories.css';
 
 export default function CategoriesPage({ navigate }) {
-  const { t, language } = useLocalization();
+  const { t, language, isArabic } = useLocalization();
   const { categoryObjects, categoriesTableAvailable } = useCatalogOptions();
   
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ export default function CategoriesPage({ navigate }) {
   if (loading && displayCategories.length === 0) {
     return (
       <div className="categories-page animate-fadeIn">
-        <CategoriesHero t={t} />
+        <CategoriesHero t={t} isArabic={isArabic} />
         <div className="container categories-container">
            <SkeletonGrid />
         </div>
@@ -33,7 +33,7 @@ export default function CategoriesPage({ navigate }) {
   if (!loading && (!categoriesTableAvailable || displayCategories.length === 0)) {
     return (
       <div className="categories-page animate-fadeIn">
-         <CategoriesHero t={t} />
+         <CategoriesHero t={t} isArabic={isArabic} />
          <div className="container" style={{ textAlign: 'center', padding: '4rem 0' }}>
             <div className="empty-state">
               <h3>{t('noCategories') || 'No Categories Available'}</h3>
@@ -46,7 +46,7 @@ export default function CategoriesPage({ navigate }) {
 
   return (
     <div className="categories-page animate-fadeIn">
-      <CategoriesHero t={t} />
+      <CategoriesHero t={t} isArabic={isArabic} />
       <div className="container categories-container">
          <div className="bento-grid">
            {displayCategories.map((cat, index) => {
@@ -108,13 +108,21 @@ export default function CategoriesPage({ navigate }) {
   );
 }
 
-function CategoriesHero({ t }) {
+function CategoriesHero({ t, isArabic }) {
   return (
     <div className="categories-hero">
        <div className="container">
-         <span className="hero-eyebrow">{t('exploreCollection') || 'EXPLORE OUR COLLECTION'}</span>
-         <h1 className="hero-heading">{t('findWhatYouLookingFor') || 'Find What You’re Looking For'}</h1>
-         <p className="hero-subheading">{t('categoriesHeroSub') || 'Browse through our extensive catalog of high-quality plumbing and sanitary supplies.'}</p>
+         <span className="hero-eyebrow">
+           {isArabic ? 'معرض ومؤسسة الجعفر • أسوان' : 'Al-Jafar Store • Aswan Collection'}
+         </span>
+         <h1 className="hero-heading">
+           {isArabic ? 'تصفح أقسام ومستلزمات السباكة' : (t('findWhatYouLookingFor') || 'Find What You’re Looking For')}
+         </h1>
+         <p className="hero-subheading">
+           {isArabic 
+             ? 'تشكيلة متكاملة من خلاطات المياه، المحابس، أطقم الحمامات، والمواسير بأعلى معايير المتانة في أسوان.' 
+             : (t('categoriesHeroSub') || 'Browse through our extensive catalog of high-quality plumbing and sanitary supplies.')}
+         </p>
        </div>
     </div>
   );

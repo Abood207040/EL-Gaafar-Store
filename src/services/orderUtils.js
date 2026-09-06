@@ -23,6 +23,12 @@ export function baseOrderSelect() {
     tax,
     total,
     payment_method,
+    delivery_governorate_id,
+    delivery_governorate_name,
+    delivery_area_id,
+    delivery_area_name,
+    delivery_class,
+    delivery_requires_manual_quote,
     created_at,
     customers:customer_id (
       id,

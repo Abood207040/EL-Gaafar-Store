@@ -88,6 +88,14 @@ export function normalizeOrder(row) {
     logistics: Number(row.logistics_fee || 0),
     tax: Number(row.tax || 0),
     total: Number(row.total || 0),
+    delivery: {
+      governorateId: row.delivery_governorate_id || null,
+      governorateName: row.delivery_governorate_name || row.city || '',
+      areaId: row.delivery_area_id || null,
+      areaName: row.delivery_area_name || row.area || '',
+      deliveryClass: row.delivery_class || null,
+      requiresManualQuote: Boolean(row.delivery_requires_manual_quote),
+    },
     paymentMethod: row.payment_method || PAYMENT_METHODS.COD,
     createdAt: row.created_at || null,
     timeline: mapOrderStatusTimeline(row.status, fulfillment, row.created_at),
@@ -116,6 +124,8 @@ export async function createOrder(orderPayload, cartItems) {
     p_street_address: orderPayload.streetAddress || null,
     p_notes: orderPayload.notes || null,
     p_customer_id: orderPayload.customer?.id || null,
+    p_governorate_id: orderPayload.governorateId || null,
+    p_area_id: orderPayload.areaId || null,
   };
 
   const { data: newOrderId, error } = await supabase.rpc('create_online_order', payload);

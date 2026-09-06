@@ -36,12 +36,15 @@ function mapUiFormToProductPayload(form, flags) {
     active: flags.active !== false,
     availableOnline: flags.availableOnline !== false,
     availableOffline: flags.availableOffline !== false,
+    isDeliveryAvailable: Boolean(flags.isDeliveryAvailable),
+    isPickupAvailable: flags.isPickupAvailable !== false,
+    deliveryClass: flags.isDeliveryAvailable ? (flags.deliveryClass || 'medium') : null,
   };
 }
 
 export default function AdminProductFormPage({ navigate, product: propProduct }) {
   const { id } = useParams();
-  const { t, parseRpcError } = useLocalization();
+  const { t, isArabic, parseRpcError } = useLocalization();
   const [product, setProduct] = useState(propProduct || null);
   const { categories, brands, addCategory, addBrand } = useCatalogOptions();
 
@@ -68,6 +71,9 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
   const [featured, setFeatured] = useState(Boolean(product?.featured));
   const [availableOnline, setAvailableOnline] = useState(product?.availableOnline !== false);
   const [availableOffline, setAvailableOffline] = useState(product?.availableOffline !== false);
+  const [isDeliveryAvailable, setIsDeliveryAvailable] = useState(Boolean(product?.isDeliveryAvailable));
+  const [isPickupAvailable, setIsPickupAvailable] = useState(product ? product.isPickupAvailable !== false : true);
+  const [deliveryClass, setDeliveryClass] = useState(product?.deliveryClass || 'medium');
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -110,6 +116,41 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
     pressureRating: product?.specs?.pressureRating || '',
     warranty: product?.specs?.warranty || '',
   });
+
+  useEffect(() => {
+    if (product) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActive(product.active !== false);
+      setFeatured(Boolean(product.featured));
+      setAvailableOnline(product.availableOnline !== false);
+      setAvailableOffline(product.availableOffline !== false);
+      setIsDeliveryAvailable(Boolean(product.isDeliveryAvailable));
+      setIsPickupAvailable(product.isPickupAvailable !== false);
+      setDeliveryClass(product.deliveryClass || 'medium');
+      setForm({
+        nameEn: product.nameEn || '',
+        nameAr: product.nameAr || '',
+        descEn: product.descriptionEn || product.description || '',
+        descAr: product.descriptionAr || '',
+        category: product.category || '',
+        categoryId: product.categoryId || '',
+        brand: product.brand || '',
+        price: product.price ?? '',
+        cost: product.cost ?? '',
+        barcode: product.barcode || '',
+        lowStockThreshold: product.lowStockThreshold ?? 5,
+        stock: product.stock ?? '',
+        sku: product.sku || '',
+        imageUrl: product.image || '',
+        size: product.specs?.size || '',
+        material: product.specs?.material || '',
+        usage: product.specs?.usage || '',
+        color: product.specs?.color || '',
+        pressureRating: product.specs?.pressureRating || '',
+        warranty: product.specs?.warranty || '',
+      });
+    }
+  }, [product]);
 
   const set = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
 
@@ -185,6 +226,11 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
       return;
     }
 
+    if (isDeliveryAvailable && !deliveryClass) {
+      setSaveError(isArabic ? 'يرجى اختيار فئة التوصيل للمنتج طالما أن التوصيل متاح.' : 'Please select a delivery class since delivery is enabled.');
+      return;
+    }
+
     setSaving(true);
     let uploadedInThisAttempt = false;
     try {
@@ -207,7 +253,7 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
 
       const payload = mapUiFormToProductPayload(
         { ...form, imageUrl: nextImageUrl },
-        { featured, active, availableOnline, availableOffline }
+        { featured, active, availableOnline, availableOffline, isDeliveryAvailable, isPickupAvailable, deliveryClass }
       );
 
       if (isEditMode) {
@@ -420,6 +466,75 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
                   <label htmlFor="warranty" className="form-label">{t('warranty')} <span className="form-hint-inline">({t('optional')})</span></label>
                   <input id="warranty" className="input" placeholder="e.g. 2 Years" value={form.warranty} onChange={set('warranty')} />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DELIVERY & FULFILLMENT SECTION */}
+          <div className="card" style={{ marginTop: '1.25rem' }}>
+            <div className="card-header">
+              <h2 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>🚚</span>
+                <span>{isArabic ? 'التوصيل والاستلام' : 'DELIVERY & FULFILLMENT'}</span>
+              </h2>
+            </div>
+            <div className="card-body">
+              <div className="form-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                <div style={{ padding: '0.85rem', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }}>{t('deliveryAvailable') || (isArabic ? 'التوصيل متاح' : 'Delivery Available')}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0.2rem 0 0 0' }}>
+                        {isDeliveryAvailable ? (isArabic ? 'متاح للشحن والتوصيل للعملاء' : 'Eligible for customer delivery') : (isArabic ? 'غير متاح للتوصيل' : 'Delivery disabled')}
+                      </p>
+                    </div>
+                    <label className="toggle" aria-label="Delivery Available toggle">
+                      <input type="checkbox" checked={isDeliveryAvailable} onChange={(e) => setIsDeliveryAvailable(e.target.checked)} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ padding: '0.85rem', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }}>{t('pickupAvailable') || (isArabic ? 'الاستلام من المعرض متاح' : 'Pickup Available')}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0.2rem 0 0 0' }}>
+                        {isPickupAvailable ? (isArabic ? 'متاح للاستلام المباشر' : 'Showroom pickup enabled') : (isArabic ? 'غير متاح للاستلام' : 'Pickup disabled')}
+                      </p>
+                    </div>
+                    <label className="toggle" aria-label="Pickup Available toggle">
+                      <input type="checkbox" checked={isPickupAvailable} onChange={(e) => setIsPickupAvailable(e.target.checked)} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '1.25rem' }}>
+                <label htmlFor="deliveryClass" className="form-label">
+                  {t('deliveryClass') || (isArabic ? 'فئة التوصيل' : 'Delivery Class')} {isDeliveryAvailable && <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>}
+                </label>
+                <select
+                  id="deliveryClass"
+                  className="input"
+                  value={deliveryClass}
+                  onChange={(e) => setDeliveryClass(e.target.value)}
+                  disabled={!isDeliveryAvailable}
+                  style={!isDeliveryAvailable ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  required={isDeliveryAvailable}
+                >
+                  <option value="small">{isArabic ? 'صغير (Small) - حنفيات وقطع صغيرة' : 'Small (Rank 1 - Faucets, small fittings, accessories)'}</option>
+                  <option value="medium">{isArabic ? 'متوسط (Medium) - خلاطات ومستلزمات قياسية' : 'Medium (Rank 2 - Mixers, standard fixtures)'}</option>
+                  <option value="large">{isArabic ? 'كبير (Large) - أحواض وسخانات ومواسير طويلة' : 'Large (Rank 3 - Sinks, water heaters, long pipes)'}</option>
+                  <option value="oversized">{isArabic ? 'ضخم (Oversized) - أطقم حمامات وسيراميك ثقيل' : 'Oversized (Rank 4 - Ceramic toilet suites, bathtubs)'}</option>
+                  <option value="special">{isArabic ? 'خاص (Special) - يتطلب عرض سعر يدوي' : 'Special (Rank 5 - Requires Manual Quote)'}</option>
+                </select>
+                <p className="form-hint" style={{ marginTop: '0.45rem' }}>
+                  {isArabic
+                    ? 'تُستخدم لتحديد رسوم التوصيل بناءً على منطقة العميل. لا يحتوي المنتج على سعر توصيل ثابت بل تُدار الأسعار من إدارة التوصيل.'
+                    : 'Used to determine the delivery fee based on the customer\'s area. The product only has a delivery class, not a hardcoded fee.'}
+                </p>
               </div>
             </div>
           </div>
