@@ -665,6 +665,11 @@ const messages = {
     paymentRecorded: 'تم تسجيل الدفعة بنجاح.',
     unknownCustomer: 'عميل غير معروف',
     noPhone: 'لا يوجد هاتف',
+
+    // Catalog edit/delete
+    editCategory: 'تعديل القسم',
+    editBrand: 'تعديل العلامة',
+    deleteWarningProducts: (count) => `تحذير: يوجد ${count} منتج مرتبط بهذا القسم/العلامة. لن يتم حذف المنتجات، لكن القسم/العلامة لن يظهر في الفلاتر.`,
   },
   en: {},
 };
@@ -1183,6 +1188,11 @@ messages.en = {
   paymentRecorded: 'Payment recorded successfully.',
   unknownCustomer: 'Unknown Customer',
   noPhone: 'No phone',
+
+  // Catalog edit/delete
+  editCategory: 'Edit Category',
+  editBrand: 'Edit Brand',
+  deleteWarningProducts: (count) => `Warning: ${count} product(s) are linked to this category/brand. Products will NOT be deleted, but this category/brand will no longer appear in filters.`,
 };
 
 const LocalizationContext = createContext(null);

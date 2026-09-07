@@ -287,6 +287,43 @@ export default function useCatalogOptions() {
     [categoriesTableAvailable, refreshCategories]
   );
 
+  const updateCategory = useCallback(
+    async (categoryId, { nameEn, nameAr, imageUrl }) => {
+      if (!categoriesTableAvailable) {
+        throw new Error('Categories table is missing or inaccessible in Supabase.');
+      }
+      const updates = {};
+      if (nameEn !== undefined) updates.name_en = normalize(nameEn);
+      if (nameAr !== undefined) updates.name_ar = normalize(nameAr);
+      if (imageUrl !== undefined) updates.image_url = imageUrl;
+      const { error } = await supabase
+        .from('categories')
+        .update(updates)
+        .eq('id', categoryId);
+      if (error) throw error;
+      await refreshCategories();
+    },
+    [categoriesTableAvailable, refreshCategories]
+  );
+
+  const updateBrand = useCallback(
+    async (brandId, { nameEn, nameAr }) => {
+      if (!brandsTableAvailable) {
+        throw new Error('Brands table is missing or inaccessible in Supabase.');
+      }
+      const updates = {};
+      if (nameEn !== undefined) updates.name_en = normalize(nameEn);
+      if (nameAr !== undefined) updates.name_ar = normalize(nameAr);
+      const { error } = await supabase
+        .from('brands')
+        .update(updates)
+        .eq('id', brandId);
+      if (error) throw error;
+      await refreshBrands();
+    },
+    [brandsTableAvailable, refreshBrands]
+  );
+
   return {
     categories,
     brands,
@@ -300,6 +337,9 @@ export default function useCatalogOptions() {
     removeCategory,
     removeBrand,
     updateCategoryImage,
+    updateCategory,
+    updateBrand,
     categoryObjects: categoryRows,
+    brandObjects: brandRows,
   };
 }
