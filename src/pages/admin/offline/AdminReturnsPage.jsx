@@ -3,7 +3,7 @@ import { useLocalization } from '../../../i18n/Localization.jsx';
 import { listOfflineSales, processOfflineReturn } from '../../../services/adminOfflineService.js';
 
 export default function AdminReturnsPage() {
-  const { t, language, parseRpcError } = useLocalization();
+  const { t, formatCurrency, parseRpcError } = useLocalization();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,7 +19,7 @@ export default function AdminReturnsPage() {
       const data = await listOfflineSales();
       setSales(data);
     } catch (err) {
-      setError(err.message || 'Failed to load sales');
+      setError(err.message || t('ERR_UNKNOWN'));
     } finally {
       setLoading(false);
     }
@@ -28,6 +28,7 @@ export default function AdminReturnsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSales();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSelectSale = (sale) => {
@@ -55,7 +56,7 @@ export default function AdminReturnsPage() {
       .map(item => ({ product_id: item.product_id, qty: item.qty, restock: item.restock }));
       
     if (itemsToReturn.length === 0) {
-      setError('Please select at least one item to return');
+      setError(t('selectAtLeastOneItem'));
       return;
     }
 
@@ -64,9 +65,8 @@ export default function AdminReturnsPage() {
     
     try {
       await processOfflineReturn(selectedSale.id, calculateTotalRefund(), refundReason, itemsToReturn);
-      alert('Return processed successfully!');
+      alert(t('returnSuccess'));
       setSelectedSale(null);
-      // We don't necessarily need to reload sales unless we want to show return status
     } catch (err) {
       setError(parseRpcError(err));
     } finally {
@@ -74,12 +74,12 @@ export default function AdminReturnsPage() {
     }
   };
 
-  if (loading) return <div className="admin-page"><p>Loading...</p></div>;
+  if (loading) return <div className="admin-page"><p>{t('loading') || 'Loading...'}</p></div>;
 
   return (
     <div className="admin-page animate-fadeIn">
       <div className="admin-page-header">
-        <h1>{t('returns') || 'Returns'}</h1>
+        <h1>{t('returns')}</h1>
       </div>
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -87,41 +87,49 @@ export default function AdminReturnsPage() {
         {/* Sales List */}
         <div className="card" style={{ flex: '1 1 min(100%, 380px)', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
           <div className="card-header">
-            <h3>Recent Sales</h3>
+            <h3>{t('recentSales')}</h3>
           </div>
           <div className="table-container">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Sale #</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Action</th>
+                  <th>{t('saleHash')}</th>
+                  <th>{t('date')}</th>
+                  <th>{t('total')}</th>
+                  <th>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {sales.map(sale => (
-                  <tr key={sale.id} style={{ background: selectedSale?.id === sale.id ? 'var(--bg-color)' : 'transparent' }}>
-                    <td>{sale.sale_number}</td>
-                    <td>{new Date(sale.created_at).toLocaleString()}</td>
-                    <td>EGP {Number(sale.total).toFixed(2)}</td>
-                    <td>
-                      <button className="btn btn-outline btn-sm" onClick={() => handleSelectSale(sale)}>
-                        Select
-                      </button>
+                {sales.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)' }}>
+                      {t('noOfflineSalesFound')}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  sales.map(sale => (
+                    <tr key={sale.id} style={{ background: selectedSale?.id === sale.id ? 'var(--bg-color)' : 'transparent' }}>
+                      <td>{sale.sale_number}</td>
+                      <td>{new Date(sale.created_at).toLocaleString()}</td>
+                      <td>{formatCurrency(sale.total)}</td>
+                      <td>
+                        <button className="btn btn-outline btn-sm" onClick={() => handleSelectSale(sale)}>
+                          {t('view')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* Return Interface */}
-        {selectedSale && (
+        {selectedSale ? (
           <div className="card" style={{ flex: 1, position: 'sticky', top: 0 }}>
             <div className="card-header">
-              <h3>Process Return: {selectedSale.sale_number}</h3>
+              <h3>{t('processReturn', selectedSale.sale_number)}</h3>
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
@@ -129,10 +137,10 @@ export default function AdminReturnsPage() {
                 <table className="table">
                 <thead>
                   <tr>
-                    <th>Item</th>
-                    <th>Max Qty</th>
-                    <th>Return Qty</th>
-                    <th>Restock?</th>
+                    <th>{t('itemCol')}</th>
+                    <th>{t('maxQty')}</th>
+                    <th>{t('returnQty')}</th>
+                    <th>{t('restockQuestion')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,8 +149,8 @@ export default function AdminReturnsPage() {
                     return (
                       <tr key={item.id}>
                         <td>
-                          <div style={{ fontWeight: 600 }}>{language === 'ar' ? item.product_name : item.product_name}</div>
-                          <div style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>EGP {Number(item.unit_price).toFixed(2)}</div>
+                          <div style={{ fontWeight: 600 }}>{item.product_name}</div>
+                          <div style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{formatCurrency(item.unit_price)}</div>
                         </td>
                         <td>{item.qty}</td>
                         <td>
@@ -176,11 +184,11 @@ export default function AdminReturnsPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Refund Reason</label>
+                <label className="form-label">{t('refundReason')}</label>
                 <input 
                   type="text"
                   className="input"
-                  placeholder="e.g. Defective, Customer changed mind"
+                  placeholder={t('refundReasonPlaceholder')}
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
                 />
@@ -188,8 +196,8 @@ export default function AdminReturnsPage() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                 <div>
-                  <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>Total Refund Amount</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>EGP {calculateTotalRefund().toFixed(2)}</div>
+                  <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{t('totalRefundAmount')}</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{formatCurrency(calculateTotalRefund())}</div>
                 </div>
                 <button 
                   className="btn btn-primary" 
@@ -197,12 +205,16 @@ export default function AdminReturnsPage() {
                   disabled={processing || calculateTotalRefund() === 0}
                   style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
                 >
-                  {processing ? 'Processing...' : 'Process Return'}
+                  {processing ? t('processing') : t('processReturnBtn')}
                 </button>
               </div>
               
               {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{error}</p>}
             </div>
+          </div>
+        ) : (
+          <div className="card" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--muted)', minHeight: '200px' }}>
+            <p>{t('selectSalePrompt')}</p>
           </div>
         )}
       </div>

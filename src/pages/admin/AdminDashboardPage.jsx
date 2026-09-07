@@ -1,13 +1,16 @@
+import { useLocalization } from '../../i18n/Localization.jsx';
+
 export default function AdminDashboardPage({ navigate }) {
+  const { t } = useLocalization();
 
   return (
     <div className="admin-page animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
         <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 'bold', color: 'var(--text-color)', marginBottom: '0.5rem' }}>
-          Welcome back to Al-Jafar Store
+          {t('welcomeBackAdmin')}
         </h1>
         <p style={{ color: 'var(--muted)', fontSize: 'clamp(0.95rem, 2vw, 1.1rem)' }}>
-          Select a management module to continue
+          {t('selectManagementModule')}
         </p>
       </div>
 
@@ -34,8 +37,8 @@ export default function AdminDashboardPage({ navigate }) {
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
             </svg>
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>Website</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Manage online orders, e-commerce catalog, and online customer data.</p>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>{t('hubWebsite')}</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>{t('hubWebsiteDesc')}</p>
         </button>
 
         {/* MEGA ICON 2: STORE */}
@@ -52,8 +55,8 @@ export default function AdminDashboardPage({ navigate }) {
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>Store</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Physical point of sale, cashier dashboard, and in-store sales history.</p>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>{t('hubStore')}</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>{t('hubStoreDesc')}</p>
         </button>
 
         {/* MEGA ICON 3: STORAGE */}
@@ -71,8 +74,8 @@ export default function AdminDashboardPage({ navigate }) {
               <line x1="12" y1="17" x2="12" y2="21"></line>
             </svg>
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>Storage</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Manage warehouse inventory, track stock movements, and restocking.</p>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-color)' }}>{t('hubStorage')}</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>{t('hubStorageDesc')}</p>
         </button>
       </div>
     </div>

@@ -24,7 +24,7 @@ function StatCard({ label, value, icon, color, sub }) {
 }
 
 export default function AdminOnlineDashboardPage({ navigate }) {
-  const { t, productName } = useLocalization();
+  const { t, productName, formatCurrency } = useLocalization();
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,8 +84,8 @@ export default function AdminOnlineDashboardPage({ navigate }) {
   return (
     <div className="admin-page animate-fadeIn">
       <div className="section-header">
-        <h1 className="section-title">Online Operations</h1>
-        <p className="section-subtitle">Manage website orders and online-specific stock alerts</p>
+        <h1 className="section-title">{t('onlineOperations')}</h1>
+        <p className="section-subtitle">{t('onlineOperationsSub')}</p>
       </div>
       
       {error ? (
@@ -94,7 +94,7 @@ export default function AdminOnlineDashboardPage({ navigate }) {
       <div className="admin-stats-grid">
         <StatCard
           label={t('totalSales')}
-          value={loading ? '...' : `EGP ${totalSales.toFixed(2)}`}
+          value={loading ? '...' : formatCurrency(totalSales)}
           icon="EGP"
           color="#F67113"
           sub={t('deliveredOrders')}
@@ -148,7 +148,7 @@ export default function AdminOnlineDashboardPage({ navigate }) {
                       <p style={{ fontWeight: 500 }}>{order.customer?.name}</p>
                       <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{order.customer?.phone}</p>
                     </td>
-                    <td>EGP {order.total.toFixed(2)}</td>
+                    <td>{formatCurrency(order.total)}</td>
                     <td><OrderStatusBadge status={order.status} /></td>
                   </tr>
                 ))}

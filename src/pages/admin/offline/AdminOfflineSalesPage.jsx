@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useLocalization } from '../../../i18n/Localization.jsx';
 import { listOfflineSales } from '../../../services/adminOfflineService.js';
 
 
 export default function AdminOfflineSalesPage() {
+  const { t, formatCurrency } = useLocalization();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,22 +18,22 @@ export default function AdminOfflineSalesPage() {
         const data = await listOfflineSales();
         if (!ignore) setSales(data);
       } catch (err) {
-        if (!ignore) setError(err.message || 'Failed to load offline sales.');
+        if (!ignore) setError(err.message || t('ERR_UNKNOWN'));
       } finally {
         if (!ignore) setLoading(false);
       }
     };
     fetchSales();
     return () => { ignore = true; };
-  }, []);
+  }, [t]);
 
   const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
 
   return (
     <div className="admin-page animate-fadeIn">
       <div className="section-header">
-        <h1 className="section-title">Offline Sales History</h1>
-        <p className="section-subtitle">Track and review all physical store transactions</p>
+        <h1 className="section-title">{t('offlineSalesHistory')}</h1>
+        <p className="section-subtitle">{t('offlineSalesHistorySub')}</p>
       </div>
 
       <div className="admin-stats-grid" style={{ marginBottom: '2rem' }}>
@@ -39,7 +41,7 @@ export default function AdminOfflineSalesPage() {
           <div className="stat-card-body">
             <div className="stat-icon" style={{ background: '#0EA5E922', color: '#0EA5E9' }}>POS</div>
             <div>
-              <p className="stat-label">Total Transactions</p>
+              <p className="stat-label">{t('totalTransactions')}</p>
               <p className="stat-value">{loading ? '...' : sales.length}</p>
             </div>
           </div>
@@ -48,8 +50,8 @@ export default function AdminOfflineSalesPage() {
           <div className="stat-card-body">
             <div className="stat-icon" style={{ background: '#F6711322', color: '#F67113' }}>EGP</div>
             <div>
-              <p className="stat-label">Total Offline Revenue</p>
-              <p className="stat-value">{loading ? '...' : `EGP ${totalRevenue.toFixed(2)}`}</p>
+              <p className="stat-label">{t('totalOfflineRevenue')}</p>
+              <p className="stat-value">{loading ? '...' : formatCurrency(totalRevenue)}</p>
             </div>
           </div>
         </div>
@@ -63,18 +65,18 @@ export default function AdminOfflineSalesPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Sale Number</th>
-                  <th>Date</th>
-                  <th>Payment</th>
-                  <th>Total</th>
-                  <th>Items</th>
+                  <th>{t('saleNumber')}</th>
+                  <th>{t('date')}</th>
+                  <th>{t('payment')}</th>
+                  <th>{t('total')}</th>
+                  <th>{t('items')}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>Loading sales...</td></tr>
+                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>{t('loadingSales')}</td></tr>
                 ) : sales.length === 0 ? (
-                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No offline sales found.</td></tr>
+                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>{t('noOfflineSalesFound')}</td></tr>
                 ) : (
                   sales.map((sale) => (
                     <tr 
@@ -89,8 +91,8 @@ export default function AdminOfflineSalesPage() {
                           {sale.payment_method}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 'bold' }}>EGP {Number(sale.total).toFixed(2)}</td>
-                      <td>{sale.offline_sale_items?.length || 0} items</td>
+                      <td style={{ fontWeight: 'bold' }}>{formatCurrency(sale.total)}</td>
+                      <td>{t('itemCount', sale.offline_sale_items?.length || 0)}</td>
                     </tr>
                   ))
                 )}
@@ -102,7 +104,7 @@ export default function AdminOfflineSalesPage() {
         {selectedSale && (
           <div className="card animate-fadeIn" style={{ flex: '1 1 min(100%, 360px)', position: 'sticky', top: '100px', minWidth: 0 }}>
             <div className="card-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.1rem' }}>Receipt: {selectedSale.sale_number}</h2>
+              <h2 style={{ fontSize: '1.1rem' }}>{t('receiptHeader', selectedSale.sale_number)}</h2>
               <button className="btn btn-outline btn-sm" onClick={() => setSelectedSale(null)}>✕</button>
             </div>
             <div className="card-body">
@@ -110,12 +112,12 @@ export default function AdminOfflineSalesPage() {
                 {new Date(selectedSale.created_at).toLocaleString()}
                 <br/>
                 {selectedSale.customers && (
-                  <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Customer: {selectedSale.customers.full_name}</span>
+                  <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{t('customerLabel')}: {selectedSale.customers.full_name}</span>
                 )}
               </p>
               
               <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>Items</h3>
+                <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>{t('itemsListLabel')}</h3>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {(selectedSale.offline_sale_items || []).map((item) => (
                     <li key={item.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
@@ -123,10 +125,10 @@ export default function AdminOfflineSalesPage() {
                         <span>{item.qty}x {item.product_name}</span>
                         {item.sku && <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{item.sku}</p>}
                         {item.discount_amount > 0 && (
-                          <p style={{ fontSize: '0.75rem', color: 'var(--success)' }}>Discount: -EGP {Number(item.discount_amount).toFixed(2)}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--success)' }}>{t('discount')}: -{formatCurrency(item.discount_amount)}</p>
                         )}
                       </div>
-                      <span>EGP {Number(item.line_total).toFixed(2)}</span>
+                      <span>{formatCurrency(item.line_total)}</span>
                     </li>
                   ))}
                 </ul>
@@ -134,44 +136,44 @@ export default function AdminOfflineSalesPage() {
 
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Subtotal</span>
-                  <span>EGP {Number(selectedSale.subtotal).toFixed(2)}</span>
+                  <span>{t('subtotal')}</span>
+                  <span>{formatCurrency(selectedSale.subtotal)}</span>
                 </div>
                 {selectedSale.discount_amount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}>
-                    <span>Invoice Discount</span>
-                    <span>- EGP {Number(selectedSale.discount_amount).toFixed(2)}</span>
+                    <span>{t('discountLabel')}</span>
+                    <span>- {formatCurrency(selectedSale.discount_amount)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
-                  <span>Total</span>
-                  <span>EGP {Number(selectedSale.total).toFixed(2)}</span>
+                  <span>{t('total')}</span>
+                  <span>{formatCurrency(selectedSale.total)}</span>
                 </div>
               </div>
 
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '1rem' }}>
-                 <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>Payment Status</h3>
+                 <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>{t('paymentStatus')}</h3>
                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-                    <span>Status:</span>
+                    <span>{t('status')}:</span>
                     <span className="badge" style={{ 
                       background: selectedSale.payment_status === 'PAID' ? 'var(--success)' : (selectedSale.payment_status === 'UNPAID' ? 'var(--danger)' : 'var(--warning)')
                     }}>{selectedSale.payment_status}</span>
                  </div>
                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-                    <span>Total Paid:</span>
-                    <span style={{ fontWeight: 'bold' }}>EGP {Number(selectedSale.total_paid).toFixed(2)}</span>
+                    <span>{t('totalPaid')}:</span>
+                    <span style={{ fontWeight: 'bold' }}>{formatCurrency(selectedSale.total_paid)}</span>
                  </div>
                  {selectedSale.remaining_balance > 0 && (
                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--danger)' }}>
-                      <span>Remaining Debt:</span>
-                      <span style={{ fontWeight: 'bold' }}>EGP {Number(selectedSale.remaining_balance).toFixed(2)}</span>
+                      <span>{t('remainingDebt')}:</span>
+                      <span style={{ fontWeight: 'bold' }}>{formatCurrency(selectedSale.remaining_balance)}</span>
                    </div>
                  )}
               </div>
 
               {selectedSale.offline_sale_payments && selectedSale.offline_sale_payments.length > 0 && (
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '1rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>Payment Ledger</h3>
+                  <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>{t('paymentLedger')}</h3>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {selectedSale.offline_sale_payments.map((payment) => (
                       <li key={payment.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.75rem', padding: '0.5rem', background: 'var(--bg-color)', borderRadius: '4px' }}>
@@ -180,7 +182,7 @@ export default function AdminOfflineSalesPage() {
                           <p style={{ color: 'var(--muted)' }}>{new Date(payment.created_at).toLocaleString()}</p>
                           {payment.notes && <p style={{ fontStyle: 'italic' }}>{payment.notes}</p>}
                         </div>
-                        <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>+EGP {Number(payment.amount).toFixed(2)}</span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--success)' }}>+{formatCurrency(payment.amount)}</span>
                       </li>
                     ))}
                   </ul>

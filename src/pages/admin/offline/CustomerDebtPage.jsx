@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useLocalization } from '../../../i18n/Localization.jsx';
 import { listCustomerDebts, recordOfflineSalePayment } from '../../../services/adminOfflineService.js';
 
 export default function CustomerDebtPage() {
+  const { t, formatCurrency } = useLocalization();
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,7 +22,7 @@ export default function CustomerDebtPage() {
       const data = await listCustomerDebts();
       setDebts(data);
     } catch (err) {
-      setError(err.message || 'Failed to load customer debts.');
+      setError(err.message || t('ERR_UNKNOWN'));
     } finally {
       setLoading(false);
     }
@@ -34,14 +36,14 @@ export default function CustomerDebtPage() {
         const data = await listCustomerDebts();
         if (!ignore) setDebts(data);
       } catch (err) {
-        if (!ignore) setError(err.message || 'Failed to load customer debts.');
+        if (!ignore) setError(err.message || t('ERR_UNKNOWN'));
       } finally {
         if (!ignore) setLoading(false);
       }
     };
     load();
     return () => { ignore = true; };
-  }, []);
+  }, [t]);
 
   const totalOutstanding = debts.reduce((sum, d) => sum + Number(d.remaining_balance), 0);
 
@@ -75,7 +77,7 @@ export default function CustomerDebtPage() {
         paymentMethod, 
         paymentNotes
       );
-      setSuccessMessage('Payment recorded successfully.');
+      setSuccessMessage(t('paymentRecorded'));
       setSelectedSale(null);
       setPaymentAmount('');
       setPaymentNotes('');
@@ -85,7 +87,7 @@ export default function CustomerDebtPage() {
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to record payment');
+      setError(err.message || t('ERR_UNKNOWN'));
     } finally {
       setProcessing(false);
     }
@@ -94,8 +96,8 @@ export default function CustomerDebtPage() {
   return (
     <div className="admin-page animate-fadeIn">
       <div className="section-header">
-        <h1 className="section-title">Customer Debts</h1>
-        <p className="section-subtitle">Manage outstanding balances and record partial payments</p>
+        <h1 className="section-title">{t('customerDebts')}</h1>
+        <p className="section-subtitle">{t('customerDebtsSub')}</p>
       </div>
 
       <div className="admin-stats-grid" style={{ marginBottom: '2rem' }}>
@@ -103,9 +105,9 @@ export default function CustomerDebtPage() {
           <div className="stat-card-body">
             <div className="stat-icon" style={{ background: '#EF444422', color: '#EF4444' }}>EGP</div>
             <div>
-              <p className="stat-label">Total Outstanding Debt</p>
+              <p className="stat-label">{t('totalOutstandingDebt')}</p>
               <p className="stat-value" style={{ color: 'var(--danger)' }}>
-                {loading ? '...' : `EGP ${totalOutstanding.toFixed(2)}`}
+                {loading ? '...' : formatCurrency(totalOutstanding)}
               </p>
             </div>
           </div>
@@ -113,39 +115,43 @@ export default function CustomerDebtPage() {
       </div>
 
       {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{error}</p>}
-      {successMessage && <p style={{ color: 'var(--success)', marginBottom: '1rem', padding: '1rem', background: 'var(--bg-color)', borderRadius: '4px' }}>{successMessage}</p>}
+      {successMessage && (
+        <p style={{ color: 'var(--success)', marginBottom: '1rem', padding: '1rem', background: 'var(--bg-color)', borderRadius: '4px' }}>
+          {successMessage}
+        </p>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {loading ? (
-          <p>Loading debts...</p>
+          <p>{t('loadingDebts')}</p>
         ) : Object.keys(debtsByCustomer).length === 0 ? (
           <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-            <h3 style={{ color: 'var(--success)' }}>No Outstanding Debts!</h3>
-            <p style={{ color: 'var(--muted)' }}>All customers are fully paid.</p>
+            <h3 style={{ color: 'var(--success)' }}>{t('noOutstandingDebts')}</h3>
+            <p style={{ color: 'var(--muted)' }}>{t('allCustomersPaid')}</p>
           </div>
         ) : (
           Object.values(debtsByCustomer).map((group, idx) => (
             <div key={idx} className="card">
               <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.2rem' }}>{group.customer?.full_name || 'Unknown Customer'}</h2>
-                  <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{group.customer?.phone || 'No phone'}</p>
+                  <h2 style={{ fontSize: '1.2rem' }}>{group.customer?.full_name || t('unknownCustomer')}</h2>
+                  <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{group.customer?.phone || t('noPhone')}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>Customer Total Debt</p>
-                  <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)' }}>EGP {group.totalDebt.toFixed(2)}</p>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{t('customerTotalDebt')}</p>
+                  <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)' }}>{formatCurrency(group.totalDebt)}</p>
                 </div>
               </div>
               <div className="table-wrapper">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Invoice #</th>
-                      <th>Date</th>
-                      <th>Total</th>
-                      <th>Paid</th>
-                      <th>Remaining</th>
-                      <th>Action</th>
+                      <th>{t('invoiceHash')}</th>
+                      <th>{t('date')}</th>
+                      <th>{t('total')}</th>
+                      <th>{t('paidCol')}</th>
+                      <th>{t('remainingCol')}</th>
+                      <th>{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -153,10 +159,10 @@ export default function CustomerDebtPage() {
                       <tr key={inv.id}>
                         <td>{inv.sale_number}</td>
                         <td>{new Date(inv.created_at).toLocaleDateString()}</td>
-                        <td>EGP {Number(inv.total).toFixed(2)}</td>
-                        <td>EGP {Number(inv.total_paid).toFixed(2)}</td>
+                        <td>{formatCurrency(inv.total)}</td>
+                        <td>{formatCurrency(inv.total_paid)}</td>
                         <td style={{ color: 'var(--danger)', fontWeight: 'bold' }}>
-                          EGP {Number(inv.remaining_balance).toFixed(2)}
+                          {formatCurrency(inv.remaining_balance)}
                         </td>
                         <td>
                           <button 
@@ -167,7 +173,7 @@ export default function CustomerDebtPage() {
                               setError('');
                             }}
                           >
-                            Record Payment
+                            {t('recordPaymentBtn')}
                           </button>
                         </td>
                       </tr>
@@ -185,21 +191,21 @@ export default function CustomerDebtPage() {
         <div className="modal-backdrop">
           <div className="modal-content animate-fadeIn" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h2>Record Payment for {selectedSale.sale_number}</h2>
+              <h2>{t('recordPaymentFor', selectedSale.sale_number)}</h2>
               <button className="close-btn" onClick={() => setSelectedSale(null)}>✕</button>
             </div>
             <form onSubmit={handleRecordPayment}>
               <div style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--bg-color)', borderRadius: '4px' }}>
-                <p><strong>Customer:</strong> {selectedSale.customers?.full_name}</p>
-                <p><strong>Invoice Total:</strong> EGP {Number(selectedSale.total).toFixed(2)}</p>
-                <p><strong>Already Paid:</strong> EGP {Number(selectedSale.total_paid).toFixed(2)}</p>
+                <p><strong>{t('customerLabel')}:</strong> {selectedSale.customers?.full_name}</p>
+                <p><strong>{t('invoiceTotal')}:</strong> {formatCurrency(selectedSale.total)}</p>
+                <p><strong>{t('alreadyPaid')}:</strong> {formatCurrency(selectedSale.total_paid)}</p>
                 <p style={{ color: 'var(--danger)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
-                  <strong>Remaining Balance: EGP {Number(selectedSale.remaining_balance).toFixed(2)}</strong>
+                  <strong>{t('remainingBalance2')}: {formatCurrency(selectedSale.remaining_balance)}</strong>
                 </p>
               </div>
 
               <div className="form-group">
-                <label>Payment Amount (EGP)</label>
+                <label>{t('paymentAmountLabel')}</label>
                 <input 
                   type="number"
                   className="input"
@@ -213,31 +219,31 @@ export default function CustomerDebtPage() {
               </div>
 
               <div className="form-group">
-                <label>Payment Method</label>
+                <label>{t('paymentMethodLabel')}</label>
                 <select className="input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="fawry">Fawry</option>
+                  <option value="cash">{t('cash')}</option>
+                  <option value="card">{t('card')}</option>
+                  <option value="fawry">{t('fawry')}</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Notes (Optional)</label>
+                <label>{t('notesOptional')}</label>
                 <input 
                   type="text"
                   className="input"
                   value={paymentNotes}
                   onChange={(e) => setPaymentNotes(e.target.value)}
-                  placeholder="e.g. Paid by brother"
+                  placeholder={t('notesPlaceholder')}
                 />
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setSelectedSale(null)}>
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={processing}>
-                  {processing ? 'Recording...' : 'Confirm Payment'}
+                  {processing ? t('recording') : t('confirmPayment')}
                 </button>
               </div>
             </form>
