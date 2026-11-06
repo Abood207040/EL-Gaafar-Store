@@ -2,7 +2,7 @@ import Barcode from 'react-barcode';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function BarcodePrintLayout({ items }) {
-  const { productName, productAltName } = useLocalization();
+  const { t, productName, productAltName } = useLocalization();
 
   if (!items || items.length === 0) return null;
 
@@ -28,7 +28,7 @@ export default function BarcodePrintLayout({ items }) {
               />
             </div>
           ) : (
-            <div className="no-barcode">No Barcode</div>
+            <div className="no-barcode">{t('noBarcode')}</div>
           )}
         </div>
       ))}

@@ -3,7 +3,7 @@ import { useLocalization } from '../../../i18n/Localization.jsx';
 import { listOfflineSales } from '../../../services/adminOfflineService.js';
 
 export default function AdminOfflineSalesPage() {
-  const { t, formatCurrency, isArabic } = useLocalization();
+  const { t, formatCurrency, isArabic, translatePaymentStatus } = useLocalization();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -254,11 +254,11 @@ export default function AdminOfflineSalesPage() {
                       <td style={{ fontWeight: 'bold' }}>{formatCurrency(sale.total)}</td>
                       <td>
                         <span className={`badge ${sale.payment_status === 'PAID' ? 'badge-success' : sale.payment_status === 'UNPAID' ? 'badge-danger' : 'badge-warning'}`}>
-                          {sale.payment_status}
+                          {translatePaymentStatus(sale.payment_status)}
                         </span>
                       </td>
                       <td style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                        {sale.profiles?.full_name || 'Staff'}
+                        {sale.profiles?.full_name || (isArabic ? 'موظف' : 'Staff')}
                       </td>
                     </tr>
                   ))
@@ -371,7 +371,7 @@ export default function AdminOfflineSalesPage() {
                     <span>{t('status')}:</span>
                     <span className="badge" style={{ 
                       background: selectedSale.payment_status === 'PAID' ? 'var(--success)' : (selectedSale.payment_status === 'UNPAID' ? 'var(--danger)' : 'var(--warning)')
-                    }}>{selectedSale.payment_status}</span>
+                    }}>{translatePaymentStatus(selectedSale.payment_status)}</span>
                  </div>
                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.85rem' }}>
                     <span>{t('totalPaid')}:</span>

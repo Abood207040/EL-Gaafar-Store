@@ -460,7 +460,7 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
                   <input id="price" className="input" type="number" min="0" step="0.01" placeholder="0.00" value={form.price} onChange={set('price')} required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="cost" className="form-label">Cost <span className="form-hint-inline">(optional)</span></label>
+                  <label htmlFor="cost" className="form-label">{t('cost')} <span className="form-hint-inline">({t('optional')})</span></label>
                   <input id="cost" className="input" type="number" min="0" step="0.01" placeholder="0.00" value={form.cost} onChange={set('cost')} />
                 </div>
                 <div className="form-group">
@@ -469,7 +469,7 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', height: '42px' }}>
                       <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{form.stock}</span>
                       <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowStockModal(true)}>
-                        Adjust
+                        {t('adjustStock')}
                       </button>
                     </div>
                   ) : (
@@ -479,25 +479,25 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
               </div>
               <div className="form-row form-row-3" style={{ marginTop: '1rem' }}>
                 <div className="form-group">
-                  <label htmlFor="sku" className="form-label">SKU</label>
+                  <label htmlFor="sku" className="form-label">{t('sku') || 'SKU'}</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input id="sku" className="input" placeholder="AJ-VAL-001" value={form.sku} onChange={set('sku')} />
                     <button type="button" className="btn btn-outline btn-sm" onClick={generateSKU} style={{ flexShrink: 0 }}>
-                      Auto
+                      {t('auto')}
                     </button>
                   </div>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="barcode" className="form-label">{t('barcode') || 'Barcode'} <span className="form-hint-inline">({t('optional')})</span></label>
+                  <label htmlFor="barcode" className="form-label">{t('barcode')} <span className="form-hint-inline">({t('optional')})</span></label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input id="barcode" className="input" placeholder="Scan or enter barcode" value={form.barcode} onChange={set('barcode')} />
+                    <input id="barcode" className="input" placeholder={t('scanOrEnterBarcode')} value={form.barcode} onChange={set('barcode')} />
                     <button type="button" className="btn btn-outline btn-sm" onClick={generateBarcode} style={{ flexShrink: 0 }}>
-                      {t('generate') || 'Generate'}
+                      {t('generate')}
                     </button>
                   </div>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="lowStockThreshold" className="form-label">Low Stock Threshold</label>
+                  <label htmlFor="lowStockThreshold" className="form-label">{t('lowStockThreshold')}</label>
                   <input id="lowStockThreshold" className="input" type="number" min="0" placeholder="5" value={form.lowStockThreshold} onChange={set('lowStockThreshold')} required />
                 </div>
               </div>
@@ -814,8 +814,8 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
               <hr className="divider" />
               <div className="toggle-group">
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Available Online</p>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>Show on website & app</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{t('availableOnline')}</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{t('availableOnlineDesc')}</p>
                 </div>
                 <label className="toggle" aria-label="Available Online toggle">
                   <input type="checkbox" checked={availableOnline} onChange={(event) => setAvailableOnline(event.target.checked)} />
@@ -825,8 +825,8 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
               <hr className="divider" />
               <div className="toggle-group">
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>Available Offline</p>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>Show in POS</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>{t('availableOffline')}</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{t('availableOfflineDesc')}</p>
                 </div>
                 <label className="toggle" aria-label="Available Offline toggle">
                   <input type="checkbox" checked={availableOffline} onChange={(event) => setAvailableOffline(event.target.checked)} />
@@ -842,7 +842,7 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
                 <p style={{ color: 'var(--danger)', fontSize: '0.8125rem' }}>{saveError}</p>
               ) : null}
               <button className="btn btn-primary w-full" onClick={handleSave} disabled={saving || uploadingImage}>
-                {uploadingImage ? 'Uploading image...' : saving ? t('saving') : isEditMode ? t('updateProduct') : t('saveProduct')}
+                {uploadingImage ? t('uploadingImage') : saving ? t('saving') : isEditMode ? t('updateProduct') : t('saveProduct')}
               </button>
               <button className="btn btn-outline w-full" onClick={() => navigate('admin-products')} disabled={saving || uploadingImage}>
                 {t('discardChanges')}
@@ -856,24 +856,24 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
         <div className="modal-overlay" onClick={() => !adjSaving && setShowStockModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <h3>Adjust Stock</h3>
+              <h3 style={{ margin: 0 }}>{t('adjustStock')}</h3>
               <button className="btn-close" onClick={() => !adjSaving && setShowStockModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Current Stock: <span style={{ fontWeight: 600 }}>{form.stock}</span></label>
+                <label className="form-label">{t('currentStock')}: <span style={{ fontWeight: 600 }}>{form.stock}</span></label>
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Transaction Type</label>
+                <label className="form-label">{t('transactionType')}</label>
                 <select className="select" value={adjType} onChange={(e) => setAdjType(e.target.value)}>
-                  <option value="restock">Restock (+)</option>
-                  <option value="damage">Damage (-)</option>
-                  <option value="loss">Loss (-)</option>
-                  <option value="manual_adjustment">Manual Adjustment (+/-)</option>
+                  <option value="restock">{t('restockType')}</option>
+                  <option value="damage">{t('damageType')}</option>
+                  <option value="loss">{t('lossType')}</option>
+                  <option value="manual_adjustment">{t('manualAdjustmentType')}</option>
                 </select>
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Quantity</label>
+                <label className="form-label">{t('quantity')}</label>
                 <input 
                   type="number" 
                   className="input" 
@@ -883,15 +883,15 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Notes</label>
-                <input type="text" className="input" placeholder="Reason for adjustment" value={adjNotes} onChange={(e) => setAdjNotes(e.target.value)} />
+                <label className="form-label">{t('notes')}</label>
+                <input type="text" className="input" placeholder={t('adjustmentReason')} value={adjNotes} onChange={(e) => setAdjNotes(e.target.value)} />
               </div>
               {adjError && <p style={{ color: 'var(--danger)', fontSize: '0.8125rem', marginBottom: '1rem' }}>{adjError}</p>}
             </div>
             <div className="modal-footer" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button className="btn btn-outline" onClick={() => setShowStockModal(false)} disabled={adjSaving}>Cancel</button>
+              <button className="btn btn-outline" onClick={() => setShowStockModal(false)} disabled={adjSaving}>{t('cancel')}</button>
               <button className="btn btn-primary" onClick={handleAdjustStock} disabled={adjSaving || !adjQty}>
-                {adjSaving ? 'Applying...' : 'Apply Adjustment'}
+                {adjSaving ? t('processing') : t('confirm')}
               </button>
             </div>
           </div>

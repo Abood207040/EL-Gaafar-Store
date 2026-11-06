@@ -2,7 +2,7 @@ import { usePos } from './PosContext.jsx';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function PosCartItem({ item }) {
-  const { productName, t } = useLocalization();
+  const { productName, t, formatCurrency, isArabic } = useLocalization();
   const { updateQty, setQty, removeFromCart, updateItemDiscount } = usePos();
   
   const handleQtyChange = (e) => {
@@ -46,7 +46,7 @@ export default function PosCartItem({ item }) {
               SKU: {item.product.sku}
             </span>
             <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-              EGP {item.product.price.toFixed(2)} / {t('unit') || 'unit'} 
+              {formatCurrency(item.product.price)} / {t('unit') || (isArabic ? 'قطعة' : 'unit')} 
             </span>
           </div>
         </div>
@@ -55,11 +55,11 @@ export default function PosCartItem({ item }) {
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             {discountAmount > 0 && (
               <span style={{ display: 'inline-block', fontSize: '0.75rem', textDecoration: 'line-through', color: 'var(--muted)' }}>
-                EGP {lineSubtotal.toFixed(2)}
+                {formatCurrency(lineSubtotal)}
               </span>
             )}
             <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: discountAmount > 0 ? 'var(--success)' : 'var(--text-color)' }}>
-              EGP {displayLineTotal.toFixed(2)}
+              {formatCurrency(displayLineTotal)}
             </span>
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function PosCartItem({ item }) {
               value={item.discountType || 'fixed'} 
               onChange={(e) => updateItemDiscount(item.product.id, e.target.value, item.discountValue)}
             >
-              <option value="fixed">EGP</option>
+              <option value="fixed">{isArabic ? 'ج.م' : 'EGP'}</option>
               <option value="percentage">%</option>
             </select>
             <input 

@@ -9,7 +9,7 @@ export default function AdminLayout({ currentPage, navigate, children }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const PAGE_TITLES = {
-    'admin-dashboard': { title: t('adminPanel'), subtitle: 'Choose a management module' },
+    'admin-dashboard': { title: t('adminHub'), subtitle: t('adminHubSub') },
     'admin-online-dashboard': { title: t('adminDashboard'), subtitle: t('adminDashboardSub') },
     'admin-products': { title: t('adminProducts'), subtitle: t('adminProductsSub') },
     'admin-product-form': { title: t('adminProductForm'), subtitle: t('adminProductFormSub') },
@@ -17,13 +17,13 @@ export default function AdminLayout({ currentPage, navigate, children }) {
     'admin-orders': { title: t('adminOrders'), subtitle: t('adminOrdersSub') },
     'admin-inventory': { title: t('adminInventory'), subtitle: t('adminInventorySub') },
     'admin-customers': { title: t('adminCustomers'), subtitle: t('adminCustomersSub') },
-    'admin-delivery': { title: t('deliveryManagement') || 'Delivery Management', subtitle: 'Manage rates, governorates & areas' },
-    'admin-pos': { title: 'Point of Sale (POS)', subtitle: 'Cashier terminal & in-store sales' },
-    'admin-offline-sales': { title: 'Offline Sales History', subtitle: 'In-store sales receipts' },
-    'admin-customer-debts': { title: 'Customer Debts', subtitle: 'Outstanding balances & payments' },
-    'admin-returns': { title: 'Returns & Refunds', subtitle: 'Process in-store returns' },
+    'admin-delivery': { title: t('deliveryManagement'), subtitle: t('deliveryManagementSub') },
+    'admin-pos': { title: t('posNewSale'), subtitle: t('posSubtitle') },
+    'admin-offline-sales': { title: t('offlineSalesTitle'), subtitle: t('offlineSalesSub') },
+    'admin-customer-debts': { title: t('customerDebtsTitle'), subtitle: t('customerDebtsSub') },
+    'admin-returns': { title: t('returnsTitle'), subtitle: t('returnsSub') },
   };
-  const { title, subtitle } = PAGE_TITLES[currentPage] || { title: 'Admin', subtitle: '' };
+  const { title, subtitle } = PAGE_TITLES[currentPage] || { title: t('admin'), subtitle: '' };
 
   return (
     <div className="admin-layout">

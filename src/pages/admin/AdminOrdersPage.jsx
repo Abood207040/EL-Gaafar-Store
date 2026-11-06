@@ -9,7 +9,7 @@ const STATUS_FILTERS = ['All', ...Object.values(ORDER_STATUSES)];
 const FULFILLMENT_FILTERS = ['All', ...Object.values(FULFILLMENT)];
 
 export default function AdminOrdersPage({ navigate }) {
-  const { t, isArabic, translateOrderStatus, translateFulfillment } = useLocalization();
+  const { t, isArabic, formatCurrency, translateOrderStatus, translateFulfillment } = useLocalization();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -247,7 +247,7 @@ export default function AdminOrdersPage({ navigate }) {
               {loading ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
-                    {t('loadingProducts')}
+                    {t('loading')}...
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
@@ -279,7 +279,7 @@ export default function AdminOrdersPage({ navigate }) {
                       </span>
                     </td>
                     <td style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{order.date}</td>
-                    <td><strong>EGP {order.total.toFixed(2)}</strong></td>
+                    <td><strong>{formatCurrency(order.total)}</strong></td>
                     <td>
                       <OrderStatusBadge status={order.status} />
                     </td>

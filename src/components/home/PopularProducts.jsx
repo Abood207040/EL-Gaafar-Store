@@ -3,128 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocalization } from '../../i18n/Localization.jsx';
 import ProductCard from '../products/ProductCard.jsx';
 import { getPopularProducts } from '../../services/productsService.js';
-import { STOCK_STATUSES } from '../../constants/domain.js';
-
-// Fallback high-demand sanitary ware & plumbing products when database is empty
-const DEFAULT_POPULAR_PRODUCTS = [
-  {
-    id: 'popular-p1',
-    nameEn: 'High Pressure UPVC Pipe 4 Inch',
-    nameAr: 'ماسورة UPVC ضغط عالي 4 بوصة',
-    category: 'Pipes',
-    categoryAr: 'مواسير',
-    brand: 'الشريف',
-    sku: 'UPVC-4IN-HP',
-    price: 340,
-    stock: 50,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p2',
-    nameEn: 'Premium Brass Ball Valve 1 Inch',
-    nameAr: 'محبس بلية نحاس إيطالي 1 بوصة',
-    category: 'Valves',
-    categoryAr: 'محابس وصمامات',
-    brand: 'ايطالي',
-    sku: 'VALVE-BRASS-1IN',
-    price: 285,
-    stock: 35,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p3',
-    nameEn: 'Kitchen Sink Mixer Tap Chrome',
-    nameAr: 'خلاط مطبخ شجرة كروم استانلس',
-    category: 'Mixers',
-    categoryAr: 'خلاطات',
-    brand: 'ساريكس',
-    sku: 'MIX-KIT-CHROME',
-    price: 1250,
-    stock: 18,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p4',
-    nameEn: 'Bathroom Shower Mixer Set',
-    nameAr: 'طقم خلاط دوش حمام كامل بالسماعة',
-    category: 'Mixers',
-    categoryAr: 'خلاطات',
-    brand: 'ساريكس',
-    sku: 'MIX-SHOWER-SET',
-    price: 1650,
-    stock: 12,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p5',
-    nameEn: 'PPR Thermal Pipe 32mm PN20',
-    nameAr: 'ماسورة بولي حراري 32 مم PN20',
-    category: 'Pipes',
-    categoryAr: 'مواسير',
-    brand: 'باننجر',
-    sku: 'PPR-32MM-PN20',
-    price: 195,
-    stock: 80,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p6',
-    nameEn: 'Multi-Jet Water Meter 3/4 Inch',
-    nameAr: 'عداد مياه متعدد النفاثات 3/4 بوصة',
-    category: 'Sanitary Ware',
-    categoryAr: 'أدوات صحية',
-    brand: 'أكوا',
-    sku: 'WM-34-MJ',
-    price: 890,
-    stock: 15,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p7',
-    nameEn: 'Automatic Water Pump Control',
-    nameAr: 'فلوماك أوتوماتيك مضخة مياه إلكتروني',
-    category: 'Plumbing Tools',
-    categoryAr: 'عدة سباكة',
-    brand: 'كالبيدا',
-    sku: 'ELEC-PUMP-CTRL',
-    price: 740,
-    stock: 22,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-  {
-    id: 'popular-p8',
-    nameEn: 'Flexible Stainless Steel Water Hose 50cm',
-    nameAr: 'وصلة سخان استانلس ستيل مرنة 50 سم',
-    category: 'Fittings',
-    categoryAr: 'وصلات',
-    brand: 'الشريف',
-    sku: 'FLEX-SS-50CM',
-    price: 95,
-    stock: 120,
-    stockStatus: STOCK_STATUSES.IN_STOCK,
-    image: '/images/transparentlogo.png',
-    featured: true,
-  },
-];
 
 export default function PopularProducts({ onAddToCart, navigate }) {
   const { t, isArabic, translateCategory } = useLocalization();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
@@ -132,22 +16,22 @@ export default function PopularProducts({ onAddToCart, navigate }) {
     const fetchPopular = async () => {
       try {
         setLoading(true);
+        setLoadError(null);
+        // Authoritative database fetch from Supabase 'products' table
         const data = await getPopularProducts(8);
         if (!ignore) {
-          if (Array.isArray(data) && data.length > 0) {
-            setProducts(data);
-          } else {
-            // If DB currently has 0 products, populate with realistic default popular products
-            setProducts(DEFAULT_POPULAR_PRODUCTS);
-          }
+          setProducts(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.warn('Failed to load popular products from Supabase, using defaults:', err);
+        console.error('Failed to load products from database:', err);
         if (!ignore) {
-          setProducts(DEFAULT_POPULAR_PRODUCTS);
+          setLoadError(err.message || 'Failed to load products');
+          setProducts([]);
         }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     };
 
@@ -157,7 +41,7 @@ export default function PopularProducts({ onAddToCart, navigate }) {
     };
   }, []);
 
-  // Compute available category filters from the products
+  // Extract category filters strictly from real loaded database products
   const availableCategories = useMemo(() => {
     const set = new Set();
     products.forEach((p) => {
@@ -187,7 +71,7 @@ export default function PopularProducts({ onAddToCart, navigate }) {
           </button>
         </div>
 
-        {/* Category Filter Tabs / Pills */}
+        {/* Category Filter Pills (if multiple categories exist in database products) */}
         {availableCategories.length > 2 && (
           <div
             className="popular-category-pills"
@@ -224,7 +108,7 @@ export default function PopularProducts({ onAddToCart, navigate }) {
           </div>
         )}
 
-        {/* Product Grid */}
+        {/* Products Grid from Real Database */}
         {loading ? (
           <div className="product-grid">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -235,11 +119,41 @@ export default function PopularProducts({ onAddToCart, navigate }) {
               />
             ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : loadError ? (
           <div
             style={{
               textAlign: 'center',
               padding: '3rem 1rem',
+              background: '#fff',
+              borderRadius: 'var(--radius)',
+              border: '1px dashed var(--border)',
+            }}
+          >
+            <p style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{loadError}</p>
+            <button className="btn btn-outline btn-sm" onClick={() => window.location.reload()}>
+              {isArabic ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+          </div>
+        ) : products.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '3rem 1rem',
+              background: '#fff',
+              borderRadius: 'var(--radius)',
+              border: '1px dashed var(--border)',
+            }}
+          >
+            <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>{t('noProductsFound')}</p>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('shop')}>
+              {t('shopAllProducts')}
+            </button>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '2.5rem 1rem',
               background: '#fff',
               borderRadius: 'var(--radius)',
               border: '1px dashed var(--border)',
@@ -266,4 +180,3 @@ export default function PopularProducts({ onAddToCart, navigate }) {
     </section>
   );
 }
-

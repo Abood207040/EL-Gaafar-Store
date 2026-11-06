@@ -3,7 +3,7 @@ import { useLocalization } from '../../i18n/Localization.jsx';
 import PosProductCard from './PosProductCard.jsx';
 
 export default function PosCatalog() {
-  const { t } = useLocalization();
+  const { t, isArabic } = useLocalization();
   const { 
     search, setSearch, 
     filteredProducts, 
@@ -32,7 +32,7 @@ export default function PosCatalog() {
         <input
           type="search"
           className="input"
-          placeholder={t('searchProducts') + " (Name, SKU, Barcode - Scan & Enter)..."}
+          placeholder={t('searchProducts') + (isArabic ? ' (الاسم، الباركود، الكود - امسح واضغط إدخال)...' : ' (Name, SKU, Barcode - Scan & Enter)...')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -46,7 +46,7 @@ export default function PosCatalog() {
         {loading ? (
           <p>{t('loading')}...</p>
         ) : filteredProducts.length === 0 ? (
-          <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: '2rem' }}>No products found.</p>
+          <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: '2rem' }}>{t('noProductsFound') || (isArabic ? 'لم يتم العثور على منتجات.' : 'No products found.')}</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem' }}>
             {filteredProducts.map((p) => (

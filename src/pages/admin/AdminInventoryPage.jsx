@@ -181,21 +181,21 @@ export default function AdminInventoryPage() {
                 <th>{t('productName')}</th>
                 <th>{t('category')}</th>
                 <th>{t('stock')}</th>
-                <th>Online</th>
-                <th>Offline</th>
+                <th>{t('online')}</th>
+                <th>{t('offline')}</th>
                 <th>{t('status')}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('loadingProducts')}
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {error || t('noItemsFound')}
                   </td>
                 </tr>
@@ -239,12 +239,12 @@ export default function AdminInventoryPage() {
                     </td>
                     <td>
                       <span className={`badge ${item.availableOnline ? 'badge-success' : 'badge-dark'}`}>
-                        {item.availableOnline ? 'YES' : 'NO'}
+                        {item.availableOnline ? t('yes') : t('no')}
                       </span>
                     </td>
                     <td>
                       <span className={`badge ${item.availableOffline ? 'badge-success' : 'badge-dark'}`}>
-                        {item.availableOffline ? 'YES' : 'NO'}
+                        {item.availableOffline ? t('yes') : t('no')}
                       </span>
                     </td>
                     <td><StockBadge status={item.stockStatus} /></td>

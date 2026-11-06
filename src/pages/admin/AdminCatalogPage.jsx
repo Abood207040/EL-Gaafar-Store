@@ -68,7 +68,7 @@ function EditModal({ item, type, onSave, onClose }) {
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', padding: '0 1.25rem 1.25rem' }}>
             <button type="button" className="btn btn-outline" onClick={onClose}>{t('cancel')}</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? t('saving') : t('saveProduct').replace('Product', '').trim() || t('confirm')}
+              {saving ? t('saving') : t('confirm')}
             </button>
           </div>
         </form>

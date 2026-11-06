@@ -8,7 +8,7 @@ import PrintBarcodesModal from './PrintBarcodesModal.jsx';
 
 export default function AdminProductsPage({ navigate }) {
   const { categories } = useCatalogOptions();
-  const { t, isArabic, translateCategory, productName, productAltName } = useLocalization();
+  const { t, isArabic, formatCurrency, translateCategory, productName, productAltName } = useLocalization();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -202,13 +202,13 @@ export default function AdminProductsPage({ navigate }) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="9" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('loadingProducts')}
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="9" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('noProductsFound')}
                   </td>
                 </tr>
@@ -251,7 +251,7 @@ export default function AdminProductsPage({ navigate }) {
                     </td>
                     <td><span className="sku-text">{product.sku}</span></td>
                     <td><span className="badge badge-muted">{translateCategory(product.category)}</span></td>
-                    <td><strong>EGP {product.price.toFixed(2)}</strong></td>
+                    <td><strong>{formatCurrency(product.price)}</strong></td>
                     <td>{product.stock}</td>
                     <td><StockBadge status={product.stockStatus} /></td>
                     <td>

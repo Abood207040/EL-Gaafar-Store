@@ -2,7 +2,7 @@ import { useLocalization } from '../../i18n/Localization.jsx';
 import placeholderImg from '../../assets/main-image.png';
 
 export default function PosProductCard({ product, onAdd }) {
-  const { productName } = useLocalization();
+  const { productName, formatCurrency, isArabic } = useLocalization();
   const outOfStock = product.stock <= 0;
 
   return (
@@ -12,7 +12,7 @@ export default function PosProductCard({ product, onAdd }) {
       disabled={outOfStock}
       style={{
         padding: '0.5rem',
-        textAlign: 'left',
+        textAlign: isArabic ? 'right' : 'left',
         cursor: outOfStock ? 'not-allowed' : 'pointer',
         opacity: outOfStock ? 0.6 : 1,
         border: '1px solid var(--border-color)',
@@ -33,9 +33,9 @@ export default function PosProductCard({ product, onAdd }) {
       </p>
       <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>{product.sku}</p>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>EGP {product.price.toFixed(2)}</span>
+        <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{formatCurrency(product.price)}</span>
         <span style={{ fontSize: '0.75rem', color: outOfStock ? 'var(--danger)' : 'var(--success)' }}>
-          {product.stock} {outOfStock ? 'Out' : 'In'}
+          {product.stock} {outOfStock ? (isArabic ? 'نفذ' : 'Out') : (isArabic ? 'متوفر' : 'In')}
         </span>
       </div>
     </button>

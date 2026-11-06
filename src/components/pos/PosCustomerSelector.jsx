@@ -5,7 +5,7 @@ import CustomerQuickAddModal from './CustomerQuickAddModal.jsx';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function PosCustomerSelector() {
-  const { isArabic } = useLocalization();
+  const { isArabic, formatCurrency, t } = useLocalization();
   const { customer, setCustomer } = usePos();
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');
@@ -132,7 +132,7 @@ export default function PosCustomerSelector() {
 
                 {filtered.length === 0 ? (
                   <div style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--muted)' }}>
-                    {isArabic ? 'لم يتم العثور على عملاء' : 'No matching customers'}
+                    {t('noMatchingCustomers')}
                   </div>
                 ) : (
                   filtered.map(c => (
@@ -156,7 +156,7 @@ export default function PosCustomerSelector() {
                       </div>
                       {c.totalDebt > 0 && (
                         <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
-                          Debt: EGP {c.totalDebt.toFixed(0)}
+                          {isArabic ? `دين: ${formatCurrency(c.totalDebt)}` : `Debt: ${formatCurrency(c.totalDebt)}`}
                         </span>
                       )}
                     </div>
@@ -172,7 +172,7 @@ export default function PosCustomerSelector() {
             style={{ whiteSpace: 'nowrap', padding: '0.45rem 0.65rem' }} 
             onClick={() => setShowAddModal(true)}
           >
-            + New
+            {isArabic ? '+ عميل جديد' : '+ New Customer'}
           </button>
         </div>
       )}

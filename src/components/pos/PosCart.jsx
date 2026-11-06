@@ -36,7 +36,7 @@ export default function PosCart() {
             disabled={cart.length === 0 || processing || holding}
             style={{ fontWeight: 600, padding: '0.4rem 0.75rem', borderRadius: '6px' }}
           >
-            {holding ? 'Holding...' : 'Hold Cart'}
+            {holding ? t('holding') : t('holdCart')}
           </button>
           <button 
             className="btn btn-outline btn-sm" 
@@ -44,7 +44,7 @@ export default function PosCart() {
             disabled={cart.length === 0 || processing || holding}
             style={{ fontWeight: 600, padding: '0.4rem 0.75rem', borderRadius: '6px', color: cart.length > 0 ? '#ef4444' : 'inherit', borderColor: cart.length > 0 ? '#fecaca' : 'inherit' }}
           >
-            {t('clearSale') || 'Clear'}
+            {t('clearSale')}
           </button>
         </div>
       </div>
@@ -60,8 +60,8 @@ export default function PosCart() {
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
             </div>
             <div>
-              <p style={{ fontWeight: 600, fontSize: '1.1rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>Cart is empty</p>
-              <p style={{ fontSize: '0.9rem' }}>Scan barcodes or click products to add.</p>
+              <p style={{ fontWeight: 600, fontSize: '1.1rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>{t('cartEmptyTitle')}</p>
+              <p style={{ fontSize: '0.9rem' }}>{t('cartEmptyDesc')}</p>
             </div>
           </div>
         ) : (

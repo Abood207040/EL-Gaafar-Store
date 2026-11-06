@@ -5,7 +5,7 @@ import { getAdminCustomers, computeCustomerStats } from '../../services/adminCus
 import CustomerDetailsModal from '../../components/admin/CustomerDetailsModal.jsx';
 
 export default function AdminCustomersPage() {
-  const { t, customerStatus, isArabic } = useLocalization();
+  const { t, customerStatus, isArabic, formatCurrency } = useLocalization();
   const [customers, setCustomers] = useState([]);
   const [stats, setStats] = useState({ total: 0, newThisMonth: 0, active: 0 });
   const [loading, setLoading] = useState(true);
@@ -119,7 +119,7 @@ export default function AdminCustomersPage() {
               {loading ? (
                 <tr>
                   <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
-                    {t('loadingProducts')}
+                    {t('loading')}...
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
@@ -156,17 +156,17 @@ export default function AdminCustomersPage() {
                       <strong>{customer.totalOrders}</strong>
                       {customer.totalSpent > 0 && (
                         <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                          EGP {customer.totalSpent.toFixed(2)}
+                          {formatCurrency(customer.totalSpent)}
                         </p>
                       )}
                     </td>
                     <td>
                       {customer.totalDebt > 0 ? (
                         <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>
-                          EGP {customer.totalDebt.toFixed(2)}
+                          {formatCurrency(customer.totalDebt)}
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--success)' }}>0.00</span>
+                        <span style={{ color: 'var(--success)' }}>{formatCurrency(0)}</span>
                       )}
                     </td>
                     <td>

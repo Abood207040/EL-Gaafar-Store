@@ -2,7 +2,7 @@ import { usePos } from './PosContext.jsx';
 import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function PosCheckout() {
-  const { t } = useLocalization();
+  const { t, formatCurrency, isArabic } = useLocalization();
   const { 
     subtotal, total, invoiceDiscount,
     invoiceDiscountType, setInvoiceDiscountType,
@@ -22,7 +22,7 @@ export default function PosCheckout() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '1rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 500 }}>{t('subtotal') || 'Subtotal'}</span>
-          <span style={{ color: 'var(--text-color)', fontWeight: 600, fontSize: '1rem' }}>EGP {subtotal.toFixed(2)}</span>
+          <span style={{ color: 'var(--text-color)', fontWeight: 600, fontSize: '1rem' }}>{formatCurrency(subtotal)}</span>
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flex: 1 }}>
@@ -33,7 +33,7 @@ export default function PosCheckout() {
               value={invoiceDiscountType}
               onChange={(e) => setInvoiceDiscountType(e.target.value)}
             >
-              <option value="fixed">EGP</option>
+              <option value="fixed">{isArabic ? 'ج.م' : 'EGP'}</option>
               <option value="percentage">%</option>
             </select>
             <div style={{ width: '1px', background: 'var(--border-color)' }}></div>
@@ -56,14 +56,14 @@ export default function PosCheckout() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7"/></svg>
             {t('discountApplied') || 'Discount'}
           </span>
-          <span>- EGP {invoiceDiscount.toFixed(2)}</span>
+          <span>- {formatCurrency(invoiceDiscount)}</span>
         </div>
       )}
 
       {/* Total */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingBottom: '0.5rem', borderBottom: '1px dashed var(--border-color)' }}>
         <span style={{ fontSize: '1.1rem', color: 'var(--text-color)', fontWeight: 800 }}>{t('total') || 'Total'}</span>
-        <span style={{ fontSize: '1.5rem', color: 'var(--text-color)', fontWeight: 900, letterSpacing: '-0.02em' }}>EGP {total.toFixed(2)}</span>
+        <span style={{ fontSize: '1.5rem', color: 'var(--text-color)', fontWeight: 900, letterSpacing: '-0.02em' }}>{formatCurrency(total)}</span>
       </div>
       
       {/* Payment Method Selection */}
@@ -128,7 +128,7 @@ export default function PosCheckout() {
             {paymentStatus === 'partial' ? (t('amountPaidNow') || 'Amount Paid Now') : (t('amountReceived') || 'Amount Received')}
           </label>
           <div style={{ display: 'flex', alignItems: 'stretch', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden', marginTop: '2px' }}>
-            <span style={{ padding: '0.5rem', background: 'var(--surface-color)', color: 'var(--muted)', fontWeight: 600, display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>EGP</span>
+            <span style={{ padding: '0.5rem', background: 'var(--surface-color)', color: 'var(--muted)', fontWeight: 600, display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>{isArabic ? 'ج.م' : 'EGP'}</span>
             <input 
               type="number"
               style={{ flex: 1, padding: '0.5rem', fontSize: '1rem', fontWeight: 700, border: 'none', outline: 'none', width: '100%' }}
@@ -144,7 +144,7 @@ export default function PosCheckout() {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px' }}>
               <span style={{ color: 'var(--danger)', fontWeight: 600, fontSize: '0.85rem' }}>{t('remainingBalance') || 'Remaining Debt'}</span>
-              <span style={{ color: 'var(--danger)', fontWeight: 800, fontSize: '1rem' }}>EGP {remainingBalance.toFixed(2)}</span>
+              <span style={{ color: 'var(--danger)', fontWeight: 800, fontSize: '1rem' }}>{formatCurrency(remainingBalance)}</span>
             </div>
 
             {guestDebtBlocked && (
@@ -158,8 +158,8 @@ export default function PosCheckout() {
           <>
             {changeAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '4px' }}>
-                <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.85rem' }}>{t('change') || 'Change Due'}</span>
-                <span style={{ color: 'var(--success)', fontWeight: 800, fontSize: '1rem' }}>EGP {changeAmount.toFixed(2)}</span>
+                <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.85rem' }}>{t('changeDue') || t('change') || 'Change Due'}</span>
+                <span style={{ color: 'var(--success)', fontWeight: 800, fontSize: '1rem' }}>{formatCurrency(changeAmount)}</span>
               </div>
             )}
           </>

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { createCustomer } from '../../services/adminCustomersService.js';
+import { useLocalization } from '../../i18n/Localization.jsx';
 
 export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
+  const { t, isArabic } = useLocalization();
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -14,7 +16,7 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.full_name) {
-      setError('Name is required');
+      setError(t('fullNameRequired') || (isArabic ? 'الاسم الكامل مطلوب' : 'Name is required'));
       return;
     }
     setProcessing(true);
@@ -28,7 +30,7 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
       });
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to create customer');
+      setError(err.message || t('ERR_UNKNOWN'));
       setProcessing(false);
     }
   };
@@ -37,13 +39,13 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
       <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="modal-header">
-          <h3>New Customer</h3>
+          <h3>{t('newCustomer')}</h3>
           <button className="btn-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Full Name *</label>
+              <label className="form-label">{t('customerName')} *</label>
               <input 
                 type="text" 
                 className="input" 
@@ -53,7 +55,7 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Phone</label>
+              <label className="form-label">{t('phone')}</label>
               <input 
                 type="text" 
                 className="input" 
@@ -62,7 +64,7 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">City</label>
+              <label className="form-label">{isArabic ? 'المدينة / المحافظة' : 'City'}</label>
               <input 
                 type="text" 
                 className="input" 
@@ -71,7 +73,7 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Area</label>
+              <label className="form-label">{isArabic ? 'المنطقة / الحي' : 'Area'}</label>
               <input 
                 type="text" 
                 className="input" 
@@ -81,7 +83,7 @@ export default function CustomerQuickAddModal({ onClose, onCustomerCreated }) {
             </div>
             {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem' }}>{error}</p>}
             <button type="submit" className="btn btn-primary" disabled={processing} style={{ marginTop: '0.5rem' }}>
-              {processing ? 'Saving...' : 'Save Customer'}
+              {processing ? (t('savingCustomer') || 'Saving...') : (t('saveCustomer') || 'Save Customer')}
             </button>
           </form>
         </div>

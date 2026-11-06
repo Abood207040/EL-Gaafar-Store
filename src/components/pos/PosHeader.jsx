@@ -58,11 +58,11 @@ export default function PosHeader() {
         <div style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
           <span>{t('cashier')}: </span>
           <span style={{ fontWeight: 600, color: 'var(--text-color)' }}>
-            Admin
+            {t('adminUser')}
           </span>
         </div>
         <button className="btn btn-outline btn-sm" onClick={() => setShowEndShift(true)} style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
-          End Shift
+          {t('endShift')}
         </button>
       </div>
 
@@ -70,15 +70,15 @@ export default function PosHeader() {
         <div className="modal-overlay" onClick={() => !processing && setShowEndShift(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <h3>End Shift</h3>
+              <h3 style={{ margin: 0 }}>{t('endShift')}</h3>
               <button className="btn-close" onClick={() => !processing && setShowEndShift(false)}>×</button>
             </div>
             <div className="modal-body">
               <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--muted)' }}>
-                Starting Cash: EGP {Number(activeShift?.starting_cash || 0).toFixed(2)}
+                {t('currentStartingCash')} EGP {Number(activeShift?.starting_cash || 0).toFixed(2)}
               </p>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Actual Ending Cash (EGP)</label>
+                <label className="form-label">{t('endingCash')}</label>
                 <input 
                   type="number" 
                   className="input" 
@@ -88,7 +88,7 @@ export default function PosHeader() {
                 />
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Notes (Discrepancy reason)</label>
+                <label className="form-label">{t('notesOptional')} - {t('discrepancyReason')}</label>
                 <input 
                   type="text" 
                   className="input" 
@@ -99,9 +99,9 @@ export default function PosHeader() {
               {error && <p style={{ color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button className="btn btn-outline" onClick={() => setShowEndShift(false)} disabled={processing}>Cancel</button>
+              <button className="btn btn-outline" onClick={() => setShowEndShift(false)} disabled={processing}>{t('cancel')}</button>
               <button className="btn btn-primary" onClick={handleEndShift} disabled={processing}>
-                {processing ? 'Closing...' : 'Close Shift'}
+                {processing ? t('processing') : t('closeShift')}
               </button>
             </div>
           </div>

@@ -3,13 +3,13 @@ import { useLocalization } from '../../i18n/Localization.jsx';
 
 const navGroups = [
   {
-    title: 'GENERAL',
+    titleKey: 'generalGroup',
     items: [
-      { id: 'admin-dashboard', label: 'Admin Hub', icon: '🏠' }
+      { id: 'admin-dashboard', labelKey: 'adminHub', icon: '🏠' }
     ]
   },
   {
-    title: 'ONLINE',
+    titleKey: 'onlineGroup',
     items: [
       { id: 'admin-online-dashboard', labelKey: 'adminDashboard', icon: 'DB' },
       { id: 'admin-orders', labelKey: 'adminOrders', icon: 'OR' },
@@ -20,18 +20,18 @@ const navGroups = [
     ]
   },
   {
-    title: 'OFFLINE',
+    titleKey: 'offlineGroup',
     items: [
-      { id: 'admin-pos', label: 'POS / New Sale', icon: '🛒' },
-      { id: 'admin-offline-sales', label: 'Offline Sales', icon: '🧾' },
-      { id: 'admin-customer-debts', label: 'Customer Debts', icon: '💳' },
-      { id: 'admin-returns', label: 'Returns', icon: '↩️' },
+      { id: 'admin-pos', labelKey: 'posNewSale', icon: '🛒' },
+      { id: 'admin-offline-sales', labelKey: 'offlineSalesTitle', icon: '🧾' },
+      { id: 'admin-customer-debts', labelKey: 'customerDebtsTitle', icon: '💳' },
+      { id: 'admin-returns', labelKey: 'returnsTitle', icon: '↩️' },
     ]
   },
   {
-    title: 'MANAGEMENT',
+    titleKey: 'managementGroup',
     items: [
-      { id: 'admin-delivery', labelKey: 'deliveryManagement', label: 'Delivery Management', icon: '🚚' },
+      { id: 'admin-delivery', labelKey: 'deliveryManagement', icon: '🚚' },
       { id: 'admin-catalog', labelKey: 'adminCatalog', icon: 'CB' }
     ]
   }
@@ -78,9 +78,9 @@ export default function AdminSidebar({ currentPage, navigate, isOpen = false, on
       {/* Nav */}
       <nav className="admin-nav" aria-label="Admin sections">
         {navGroups.map((group) => (
-          <div key={group.title} className="admin-nav-group">
+          <div key={group.titleKey} className="admin-nav-group">
             <h4 className="admin-nav-group-title" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', margin: '0.5rem 0 0 0' }}>
-              {group.title}
+              {t(group.titleKey)}
             </h4>
             {group.items.map(item => (
               <button
@@ -90,7 +90,7 @@ export default function AdminSidebar({ currentPage, navigate, isOpen = false, on
                 aria-current={currentPage === item.id ? 'page' : undefined}
               >
                 <span className="admin-nav-icon" aria-hidden="true">{item.icon}</span>
-                {item.labelKey ? t(item.labelKey) : item.label}
+                {t(item.labelKey)}
               </button>
             ))}
           </div>

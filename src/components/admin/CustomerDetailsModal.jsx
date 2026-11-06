@@ -4,7 +4,7 @@ import { getCustomerDetails } from '../../services/adminCustomersService.js';
 import { OrderStatusBadge } from '../ui/StatusBadge.jsx';
 
 export default function CustomerDetailsModal({ customerId, onClose }) {
-  const { t, isArabic, formatCurrency, translateOrderStatus } = useLocalization();
+  const { t, formatCurrency, translateOrderStatus, translatePaymentStatus } = useLocalization();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -98,21 +98,21 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
                   className={`btn btn-sm ${activeTab === 'orders' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setActiveTab('orders')}
                 >
-                  {isArabic ? 'الطلبات الإلكترونية' : 'Online Orders'} ({data.onlineOrders.length})
+                  {t('onlineOrdersTab')} ({data.onlineOrders.length})
                 </button>
                 <button
                   type="button"
                   className={`btn btn-sm ${activeTab === 'offline' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setActiveTab('offline')}
                 >
-                  {isArabic ? 'مشتريات المعرض (POS)' : 'Showroom Sales'} ({data.offlineSales.length})
+                  {t('showroomSalesTab')} ({data.offlineSales.length})
                 </button>
                 <button
                   type="button"
                   className={`btn btn-sm ${activeTab === 'debt' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setActiveTab('debt')}
                 >
-                  {isArabic ? 'المديونيات والمدفوعات' : 'Debt & Payments'}
+                  {t('debtPaymentsTab')}
                 </button>
               </div>
 
@@ -121,7 +121,7 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
                 <div>
                   {data.onlineOrders.length === 0 ? (
                     <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '2rem' }}>
-                      {isArabic ? 'لا توجد طلبات إلكترونية لهذا العميل' : 'No online orders found for this customer.'}
+                      {t('noOnlineOrdersCustomer')}
                     </p>
                   ) : (
                     <div className="table-wrapper">
@@ -157,7 +157,7 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
                 <div>
                   {data.offlineSales.length === 0 ? (
                     <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '2rem' }}>
-                      {isArabic ? 'لا توجد مشتريات مسجلة بالمعرض لهذا العميل' : 'No showroom sales recorded for this customer.'}
+                      {t('noShowroomSalesCustomer')}
                     </p>
                   ) : (
                     <div className="table-wrapper">
@@ -167,8 +167,8 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
                             <th>{t('saleNumber') || 'Receipt #'}</th>
                             <th>{t('date')}</th>
                             <th>{t('total')}</th>
-                            <th>{t('paidCol') || 'Paid'}</th>
-                            <th>{t('remainingCol') || 'Remaining'}</th>
+                            <th>{t('paidCol')}</th>
+                            <th>{t('remainingCol')}</th>
                             <th>{t('paymentStatus')}</th>
                           </tr>
                         </thead>
@@ -184,7 +184,7 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
                               </td>
                               <td>
                                 <span className={`badge ${s.payment_status === 'PAID' ? 'badge-success' : s.payment_status === 'UNPAID' ? 'badge-danger' : 'badge-warning'}`}>
-                                  {s.payment_status}
+                                  {translatePaymentStatus(s.payment_status)}
                                 </span>
                               </td>
                             </tr>
@@ -200,7 +200,7 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
               {activeTab === 'debt' && (
                 <div>
                   <div style={{ marginBottom: '1rem', padding: '1rem', background: data.totalDebt > 0 ? '#FEF2F2' : '#F0FDF4', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '0.85rem' }}>{isArabic ? 'إجمالي المديونية الحالية المستحقة:' : 'Current Outstanding Debt:'} </span>
+                    <span style={{ fontSize: '0.85rem' }}>{t('currentOutstandingDebt')} </span>
                     <strong style={{ fontSize: '1.2rem', color: data.totalDebt > 0 ? 'var(--danger)' : 'var(--success)' }}>
                       {formatCurrency(data.totalDebt)}
                     </strong>
@@ -208,11 +208,11 @@ export default function CustomerDetailsModal({ customerId, onClose }) {
 
                   {data.offlineSales.filter(s => Number(s.remaining_balance) > 0).length === 0 ? (
                     <p style={{ color: 'var(--success)', textAlign: 'center', padding: '1.5rem' }}>
-                      ✓ {isArabic ? 'لا توجد مديونيات متأخرة على هذا العميل.' : 'No outstanding debts on this account.'}
+                      ✓ {t('noDebtOnCustomer')}
                     </p>
                   ) : (
                     <div>
-                      <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>{isArabic ? 'الفواتير المعلقة' : 'Unpaid / Partially Paid Invoices'}:</h4>
+                      <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>{t('unpaidInvoices')}:</h4>
                       <div className="table-wrapper">
                         <table className="table">
                           <thead>

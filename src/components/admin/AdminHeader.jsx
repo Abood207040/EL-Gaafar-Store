@@ -4,7 +4,7 @@ import { useLocalization } from '../../i18n/Localization.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
 
 export default function AdminHeader({ title, subtitle, navigate, onToggleSidebar }) {
-  const { t } = useLocalization();
+  const { t, isArabic, toggleLanguage } = useLocalization();
   const { signOut } = useAuth();
   const [search, setSearch] = useState('');
 
@@ -58,6 +58,16 @@ export default function AdminHeader({ title, subtitle, navigate, onToggleSidebar
             <span className="admin-profile-name">{t('adminUser')}</span>
             <span className="admin-profile-role">{t('storeManager')}</span>
           </div>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm lang-toggle"
+            onClick={toggleLanguage}
+            title={isArabic ? 'Switch to English' : 'التحويل للعربية'}
+            aria-label={isArabic ? 'Switch to English' : 'التحويل للعربية'}
+            style={{ fontWeight: 600, minWidth: '48px', padding: '0.35rem 0.65rem' }}
+          >
+            {isArabic ? 'EN' : 'عربي'}
+          </button>
           <button
             type="button"
             className="btn btn-primary btn-sm"
