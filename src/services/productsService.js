@@ -277,6 +277,8 @@ export async function getFeaturedProducts(limit = 8) {
   });
 }
 
+export const getPopularProducts = getFeaturedProducts;
+
 export async function getStoreProductById(id) {
   return safeProductQuery(async (forceWithoutDelivery = false) => {
     const { data, error } = await supabase
