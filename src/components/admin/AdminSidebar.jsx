@@ -38,7 +38,7 @@ const navGroups = [
 ];
 
 export default function AdminSidebar({ currentPage, navigate, isOpen = false, onClose }) {
-  const { t } = useLocalization();
+  const { t, isArabic } = useLocalization();
 
   const handleItemClick = (id) => {
     navigate(id);
@@ -59,7 +59,7 @@ export default function AdminSidebar({ currentPage, navigate, isOpen = false, on
             </svg>
           </div>
           <div>
-            <span className="admin-brand-name">Al-Jafar</span>
+            <span className="admin-brand-name">{isArabic ? 'شركة الجعفر' : 'Al-Jafar'}</span>
             <span className="admin-brand-sub">{t('adminPanel')}</span>
           </div>
         </div>

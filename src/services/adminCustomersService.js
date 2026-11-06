@@ -1,9 +1,9 @@
 import { supabase } from './authService.js';
-import { withAdminRlsError } from './orderUtils.js';
+import { withAdminRlsError, baseOrderSelect } from './orderUtils.js';
+import { normalizeOrder } from './ordersService.js';
 
 const CUSTOMERS_TABLE = 'customers';
 const ORDERS_TABLE = 'orders';
-
 
 export async function getAdminCustomers() {
   const { data: customers, error } = await supabase
@@ -26,7 +26,7 @@ export async function getAdminCustomers() {
 
     const offlineResult = await supabase
       .from('offline_sales')
-      .select('id, customer_id, total, created_at')
+      .select('id, customer_id, total, created_at, remaining_balance')
       .in('customer_id', customerIds);
     if (offlineResult.error) throw withAdminRlsError(offlineResult.error);
     offlineSales = offlineResult.data || [];
@@ -51,6 +51,7 @@ export async function getAdminCustomers() {
     const totalSpentOnline = custData.orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
     const totalSpentOffline = custData.offline.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
     const totalSpent = totalSpentOnline + totalSpentOffline;
+    const totalDebt = custData.offline.reduce((sum, sale) => sum + Number(sale.remaining_balance || 0), 0);
     
     const allActivity = [...custData.orders, ...custData.offline].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const lastOrderDate = allActivity[0]?.created_at
@@ -67,19 +68,22 @@ export async function getAdminCustomers() {
       createdAt: customer.created_at || '',
       name: customer.full_name || '',
       phone: customer.phone || '',
+      phoneNormalized: customer.phone_normalized || '',
       email: customer.email || '',
       city: customer.city || '',
       area: customer.area || '',
+      address: customer.address || '',
+      authUserId: customer.auth_user_id || null,
       totalOrders,
       totalSpent,
+      totalDebt,
       lastOrderDate,
       status: totalOrders > 0 ? 'Active' : (isNew ? 'New' : 'Inactive'),
     };
   });
 }
 
-export async function getCustomerStats() {
-  const customers = await getAdminCustomers();
+export function computeCustomerStats(customers) {
   const now = new Date();
   const monthAgo = new Date(now);
   monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -93,6 +97,63 @@ export async function getCustomerStats() {
     total: customers.length,
     newThisMonth,
     active: customers.filter((customer) => customer.status === 'Active').length,
+  };
+}
+
+export async function getCustomerStats(existingCustomers = null) {
+  const customers = existingCustomers || (await getAdminCustomers());
+  return computeCustomerStats(customers);
+}
+
+export async function getCustomerDetails(customerId) {
+  if (!customerId) return null;
+
+  // 1. Fetch customer row
+  const { data: customer, error: custError } = await supabase
+    .from(CUSTOMERS_TABLE)
+    .select('*')
+    .eq('id', customerId)
+    .single();
+
+  if (custError) throw withAdminRlsError(custError);
+
+  // 2. Fetch online orders
+  const { data: ordersData, error: ordersError } = await supabase
+    .from(ORDERS_TABLE)
+    .select(baseOrderSelect())
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  if (ordersError) throw withAdminRlsError(ordersError);
+
+  // 3. Fetch offline showroom sales
+  const { data: salesData, error: salesError } = await supabase
+    .from('offline_sales')
+    .select(`
+      id,
+      sale_number,
+      total,
+      total_paid,
+      remaining_balance,
+      payment_status,
+      created_at,
+      offline_sale_items ( id, product_name, qty, unit_price, line_total ),
+      offline_sale_payments ( id, amount, payment_method, notes, created_at )
+    `)
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  if (salesError) throw withAdminRlsError(salesError);
+
+  const onlineOrders = (ordersData || []).map(normalizeOrder);
+  const offlineSales = salesData || [];
+  const totalDebt = offlineSales.reduce((sum, s) => sum + Number(s.remaining_balance || 0), 0);
+
+  return {
+    customer,
+    onlineOrders,
+    offlineSales,
+    totalDebt
   };
 }
 

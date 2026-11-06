@@ -109,7 +109,7 @@ export default function useCatalogOptions() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     refreshCategories().catch(() => {});
      
     refreshBrands().catch(() => {});

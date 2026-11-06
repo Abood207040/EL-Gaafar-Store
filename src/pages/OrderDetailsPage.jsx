@@ -102,7 +102,7 @@ export default function OrderDetailsPage({ order, navigate }) {
   const isPickup = currentOrder.fulfillment === FULFILLMENT.PICKUP;
   const whatsappMsg = encodeURIComponent(
     isArabic
-      ? `مرحباً مؤسسة الجعفر بأسوان، أود الاستفسار عن طلبي رقم: #${currentOrder.orderNumber || currentOrder.id}`
+      ? `مرحباً شركة الجعفر بأسوان، أود الاستفسار عن طلبي رقم: #${currentOrder.orderNumber || currentOrder.id}`
       : `Hello Al-Jafar Store Aswan, I am inquiring about order: #${currentOrder.orderNumber || currentOrder.id}`
   );
 

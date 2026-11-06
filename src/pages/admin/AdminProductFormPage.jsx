@@ -6,7 +6,25 @@ import { createAdminProduct, updateAdminProduct, adjustProductStock, getAdminPro
 import { uploadProductImage } from '../../services/storageService.js';
 import { useParams } from 'react-router-dom';
 
-function mapUiFormToProductPayload(form, flags) {
+function mapUiFormToProductPayload(form, flags, technicalSpecs = []) {
+  const dynamicSpecsFormatted = technicalSpecs
+    .filter((s) => (s.nameEn?.trim() || s.nameAr?.trim()) && (s.valueEn?.trim() || s.valueAr?.trim()))
+    .map((s) => ({
+      name_en: (s.nameEn || s.nameAr || '').trim(),
+      name_ar: (s.nameAr || s.nameEn || '').trim(),
+      value_en: (s.valueEn || s.valueAr || '').trim(),
+      value_ar: (s.valueAr || s.valueEn || '').trim(),
+    }));
+
+  const findSpecVal = (enKeyword, arKeyword) => {
+    const item = technicalSpecs.find(
+      (s) =>
+        s.nameEn?.toLowerCase().includes(enKeyword.toLowerCase()) ||
+        s.nameAr?.includes(arKeyword)
+    );
+    return item ? (item.valueEn || item.valueAr || '').trim() : '';
+  };
+
   return {
     nameEn: form.nameEn.trim(),
     nameAr: form.nameAr.trim(),
@@ -25,13 +43,14 @@ function mapUiFormToProductPayload(form, flags) {
     descriptionEn: form.descEn.trim(),
     descriptionAr: form.descAr.trim(),
     specs: {
-      size: form.size.trim(),
-      material: form.material.trim(),
-      usage: form.usage.trim(),
-      color: form.color.trim(),
-      pressureRating: form.pressureRating.trim(),
-      warranty: form.warranty.trim(),
+      size: findSpecVal('size', 'مقاس') || form.size?.trim() || '',
+      material: findSpecVal('material', 'خام') || form.material?.trim() || '',
+      usage: findSpecVal('usage', 'استخدام') || form.usage?.trim() || '',
+      color: findSpecVal('color', 'لون') || form.color?.trim() || '',
+      pressureRating: findSpecVal('pressure', 'ضغط') || form.pressureRating?.trim() || '',
+      warranty: findSpecVal('warranty', 'ضمان') || form.warranty?.trim() || '',
     },
+    technicalSpecs: dynamicSpecsFormatted,
     featured: Boolean(flags.featured),
     active: flags.active !== false,
     availableOnline: flags.availableOnline !== false,
@@ -86,6 +105,37 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
   const [newBrandEn, setNewBrandEn] = useState('');
   const [newBrandAr, setNewBrandAr] = useState('');
 
+  const [technicalSpecs, setTechnicalSpecs] = useState([]);
+
+  const addSpecRow = (preset) => {
+    const newRow = preset
+      ? { id: `spec-${Date.now()}-${Math.random()}`, nameEn: preset.nameEn, nameAr: preset.nameAr, valueEn: '', valueAr: '' }
+      : { id: `spec-${Date.now()}-${Math.random()}`, nameEn: '', nameAr: '', valueEn: '', valueAr: '' };
+    setTechnicalSpecs((prev) => [...prev, newRow]);
+  };
+
+  const updateSpecRow = (id, field, value) => {
+    setTechnicalSpecs((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const removeSpecRow = (id) => {
+    setTechnicalSpecs((prev) => prev.filter((row) => row.id !== id));
+  };
+
+  const moveSpecRow = (index, direction) => {
+    setTechnicalSpecs((prev) => {
+      const next = [...prev];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= next.length) return prev;
+      const temp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = temp;
+      return next;
+    });
+  };
+
   // Stock Adjustment Modal State
   const [showStockModal, setShowStockModal] = useState(false);
   const [adjType, setAdjType] = useState('restock');
@@ -119,7 +169,7 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
 
   useEffect(() => {
     if (product) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setActive(product.active !== false);
       setFeatured(Boolean(product.featured));
       setAvailableOnline(product.availableOnline !== false);
@@ -149,6 +199,27 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
         pressureRating: product.specs?.pressureRating || '',
         warranty: product.specs?.warranty || '',
       });
+
+      if (Array.isArray(product.technicalSpecs) && product.technicalSpecs.length > 0) {
+        setTechnicalSpecs(
+          product.technicalSpecs.map((s, idx) => ({
+            id: `spec-${idx}-${Date.now()}`,
+            nameEn: s.name_en || s.nameEn || '',
+            nameAr: s.name_ar || s.nameAr || '',
+            valueEn: s.value_en || s.valueEn || '',
+            valueAr: s.value_ar || s.valueAr || '',
+          }))
+        );
+      } else {
+        const legacy = [];
+        if (product.specs?.size) legacy.push({ id: 's1', nameEn: 'Size', nameAr: 'المقاس', valueEn: product.specs.size, valueAr: product.specs.size });
+        if (product.specs?.material) legacy.push({ id: 's2', nameEn: 'Material', nameAr: 'الخامة', valueEn: product.specs.material, valueAr: product.specs.material });
+        if (product.specs?.usage) legacy.push({ id: 's3', nameEn: 'Usage', nameAr: 'الاستخدام', valueEn: product.specs.usage, valueAr: product.specs.usage });
+        if (product.specs?.color) legacy.push({ id: 's4', nameEn: 'Color', nameAr: 'اللون', valueEn: product.specs.color, valueAr: product.specs.color });
+        if (product.specs?.pressureRating) legacy.push({ id: 's5', nameEn: 'Pressure Rating', nameAr: 'ضغط التشغيل', valueEn: product.specs.pressureRating, valueAr: product.specs.pressureRating });
+        if (product.specs?.warranty) legacy.push({ id: 's6', nameEn: 'Warranty', nameAr: 'فترة الضمان', valueEn: product.specs.warranty, valueAr: product.specs.warranty });
+        setTechnicalSpecs(legacy);
+      }
     }
   }, [product]);
 
@@ -156,7 +227,7 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
 
   useEffect(() => {
     if (!imageFile) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setImagePreviewUrl('');
       return undefined;
     }
@@ -253,7 +324,8 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
 
       const payload = mapUiFormToProductPayload(
         { ...form, imageUrl: nextImageUrl },
-        { featured, active, availableOnline, availableOffline, isDeliveryAvailable, isPickupAvailable, deliveryClass }
+        { featured, active, availableOnline, availableOffline, isDeliveryAvailable, isPickupAvailable, deliveryClass },
+        technicalSpecs
       );
 
       if (isEditMode) {
@@ -433,40 +505,160 @@ export default function AdminProductFormPage({ navigate, product: propProduct })
           </div>
 
           <div className="card" style={{ marginTop: '1.25rem' }}>
-            <div className="card-header">
-              <h2 style={{ fontSize: '1rem' }}>{t('technicalSpecs')}</h2>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1rem', margin: 0 }}>{t('technicalSpecs') || (isArabic ? 'المواصفات الفنية الديناميكية' : 'Dynamic Technical Specifications')}</h2>
+                <p className="form-hint" style={{ margin: '0.25rem 0 0 0' }}>
+                  {isArabic
+                    ? 'أضف أي عدد من المواصفات الفنية باللغتين العربية والإنجليزية لتظهر بتنسيق منظم في متجر العميل.'
+                    : 'Add custom technical specifications in English & Arabic. Will render automatically on product page.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => addSpecRow()}
+              >
+                + {isArabic ? 'إضافة مواصفة يدوية' : 'Add Custom Spec'}
+              </button>
             </div>
             <div className="card-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="size" className="form-label">{t('size')}</label>
-                  <input id="size" className="input" placeholder="e.g. 3/4 inch, 25mm" value={form.size} onChange={set('size')} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="material" className="form-label">{t('material')}</label>
-                  <input id="material" className="input" placeholder="e.g. Brass, PVC, Stainless Steel" value={form.material} onChange={set('material')} />
-                </div>
-              </div>
-              <div className="form-row" style={{ marginTop: '1rem' }}>
-                <div className="form-group">
-                  <label htmlFor="usage" className="form-label">{t('usage')}</label>
-                  <input id="usage" className="input" placeholder="e.g. Water Shutoff, Shower" value={form.usage} onChange={set('usage')} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="color" className="form-label">{t('color')}</label>
-                  <input id="color" className="input" placeholder="e.g. Chrome, White, Bronze" value={form.color} onChange={set('color')} />
-                </div>
-              </div>
-              <div className="form-row" style={{ marginTop: '1rem' }}>
-                <div className="form-group">
-                  <label htmlFor="pressure" className="form-label">{t('pressureRating')} <span className="form-hint-inline">({t('optional')})</span></label>
-                  <input id="pressure" className="input" placeholder="e.g. 16 Bar" value={form.pressureRating} onChange={set('pressureRating')} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="warranty" className="form-label">{t('warranty')} <span className="form-hint-inline">({t('optional')})</span></label>
-                  <input id="warranty" className="input" placeholder="e.g. 2 Years" value={form.warranty} onChange={set('warranty')} />
+              {/* Quick Template Presets */}
+              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: '0.5rem' }}>
+                  {isArabic ? '⚡ قوالب جاهزة سريعة للأدوات الصحية:' : '⚡ Quick Templates for Sanitary Ware:'}
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {[
+                    { nameEn: 'Size', nameAr: 'المقاس' },
+                    { nameEn: 'Material', nameAr: 'الخامة' },
+                    { nameEn: 'Color / Finish', nameAr: 'اللون / التشطيب' },
+                    { nameEn: 'Usage / Application', nameAr: 'الاستخدام' },
+                    { nameEn: 'Pressure Rating', nameAr: 'ضغط التشغيل' },
+                    { nameEn: 'Warranty', nameAr: 'فترة الضمان' },
+                    { nameEn: 'Country of Origin', nameAr: 'بلد المنشأ' },
+                    { nameEn: 'Installation Type', nameAr: 'نوع التثبيت' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.nameEn}
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                      onClick={() => addSpecRow(preset)}
+                    >
+                      + {isArabic ? preset.nameAr : preset.nameEn}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {technicalSpecs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--muted)', border: '1px dashed var(--line)', borderRadius: '8px' }}>
+                  <p style={{ margin: 0 }}>
+                    {isArabic
+                      ? 'لا توجد مواصفات فنية مضافة لهذا المنتج بعد. اختر من القوالب أعلاه أو اضغط إضافة مواصفة.'
+                      : 'No technical specifications added yet. Choose from quick templates above or click Add Custom Spec.'}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {technicalSpecs.map((row, index) => (
+                    <div
+                      key={row.id}
+                      style={{
+                        padding: '0.85rem',
+                        background: 'var(--bg)',
+                        border: '1px solid var(--line)',
+                        borderRadius: '8px',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr)) auto',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--muted)', display: 'block', marginBottom: '0.2rem' }}>
+                          {isArabic ? 'اسم المواصفة (EN)' : 'Spec Name (EN)'}
+                        </label>
+                        <input
+                          className="input"
+                          style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+                          placeholder="e.g. Size, Material"
+                          value={row.nameEn}
+                          onChange={(e) => updateSpecRow(row.id, 'nameEn', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--muted)', display: 'block', marginBottom: '0.2rem' }}>
+                          {isArabic ? 'اسم المواصفة (AR)' : 'Spec Name (AR)'}
+                        </label>
+                        <input
+                          className="input"
+                          style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+                          placeholder="مثال: المقاس، الخامة"
+                          value={row.nameAr}
+                          onChange={(e) => updateSpecRow(row.id, 'nameAr', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--muted)', display: 'block', marginBottom: '0.2rem' }}>
+                          {isArabic ? 'القيمة (EN)' : 'Value (EN)'}
+                        </label>
+                        <input
+                          className="input"
+                          style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+                          placeholder="e.g. 3/4 inch, Brass"
+                          value={row.valueEn}
+                          onChange={(e) => updateSpecRow(row.id, 'valueEn', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--muted)', display: 'block', marginBottom: '0.2rem' }}>
+                          {isArabic ? 'القيمة (AR)' : 'Value (AR)'}
+                        </label>
+                        <input
+                          className="input"
+                          style={{ padding: '0.4rem 0.6rem', fontSize: '0.85rem' }}
+                          placeholder="مثال: 3/4 بوصة، نحاس"
+                          value={row.valueAr}
+                          onChange={(e) => updateSpecRow(row.id, 'valueAr', e.target.value)}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'flex-end', paddingTop: '1rem' }}>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '0.35rem 0.5rem', lineHeight: 1 }}
+                          disabled={index === 0}
+                          onClick={() => moveSpecRow(index, -1)}
+                          title="Move Up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '0.35rem 0.5rem', lineHeight: 1 }}
+                          disabled={index === technicalSpecs.length - 1}
+                          onClick={() => moveSpecRow(index, 1)}
+                          title="Move Down"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '0.35rem 0.5rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                          onClick={() => removeSpecRow(row.id)}
+                          title="Delete"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

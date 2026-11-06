@@ -113,7 +113,7 @@ function CategoriesHero({ t, isArabic }) {
     <div className="categories-hero">
        <div className="container">
          <span className="hero-eyebrow">
-           {isArabic ? 'معرض ومؤسسة الجعفر • أسوان' : 'Al-Jafar Store • Aswan Collection'}
+           {isArabic ? 'معرض شركة الجعفر • أسوان' : 'Al-Jafar Store • Aswan Collection'}
          </span>
          <h1 className="hero-heading">
            {isArabic ? 'تصفح أقسام ومستلزمات السباكة' : (t('findWhatYouLookingFor') || 'Find What You’re Looking For')}

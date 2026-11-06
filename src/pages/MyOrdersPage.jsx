@@ -283,7 +283,7 @@ export default function MyOrdersPage({ navigate, initialLookup = '' }) {
                 <div className="order-card-footer" style={{ padding: '1rem 1.5rem', background: '#FAFAFA', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {order.fulfillment === FULFILLMENT.PICKUP
-                      ? (isArabic ? '📍 الاستلام من معرض الجعفر بأسوان' : '📍 Pickup at Al-Jafar Aswan Showroom')
+                      ? (isArabic ? '📍 الاستلام من معرض شركة الجعفر بأسوان' : '📍 Pickup at Al-Jafar Aswan Showroom')
                       : (isArabic ? `🚚 التوصيل إلى: ${order.address?.city || 'أسوان'}` : `🚚 Delivering to: ${order.address?.city || 'Aswan'}`)}
                   </span>
                   <button

@@ -142,7 +142,7 @@ export default function ShopPage({ onAddToCart, navigate }) {
         <div className="shop-header-card">
           <div className="shop-header-content">
             <span className="shop-header-kicker">
-              {isArabic ? 'معرض ومؤسسة الجعفر • أسوان، مصر' : 'Al-Jafar Store • Aswan, Egypt'}
+              {isArabic ? 'معرض شركة الجعفر • أسوان، مصر' : 'Al-Jafar Store • Aswan, Egypt'}
             </span>
             <h1 className="shop-header-title">
               {isArabic ? 'كتالوج مستلزمات السباكة والأدوات الصحية' : 'Sanitary Ware & Plumbing Tools Catalog'}

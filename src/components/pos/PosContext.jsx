@@ -191,6 +191,32 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
     paymentStatus === 'partial' ? (safeAmountPaid >= 0 && safeAmountPaid < total) : (safeAmountPaid >= total || safeAmountPaid === 0 /* UX fallback, if full we might auto-fill */)
   );
 
+  const handleBarcodeScan = (rawCode) => {
+    const code = (rawCode || '').trim().toLowerCase();
+    if (!code) return false;
+
+    // 1. Exact barcode match
+    let match = products.find((p) => p.barcode && p.barcode.trim().toLowerCase() === code);
+    
+    // 2. Exact SKU match
+    if (!match) {
+      match = products.find((p) => p.sku && p.sku.trim().toLowerCase() === code);
+    }
+
+    if (match) {
+      if (match.stock > 0) {
+        addToCart(match);
+        setSearch('');
+        return true;
+      } else {
+        alert(`Product "${match.nameEn || match.nameAr}" is out of stock.`);
+        return false;
+      }
+    }
+
+    return false;
+  };
+
   const handleCheckout = async () => {
     // Determine the actual amount to record
     let finalAmountToRecord = safeAmountPaid;
@@ -219,7 +245,7 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
     setSuccessMessage('');
     
     try {
-      const newSaleId = await createOfflineSale(
+      const saleResult = await createOfflineSale(
         cart, 
         paymentMethod, 
         customer?.id || null, 
@@ -228,19 +254,25 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
         finalAmountToRecord,
         paymentStatus === 'partial' ? 'Partial initial payment' : ''
       );
+
+      const saleId = typeof saleResult === 'object' && saleResult?.id ? saleResult.id : saleResult;
+      const saleNumber = typeof saleResult === 'object' && saleResult?.sale_number ? saleResult.sale_number : `SAL-${String(saleId || '').slice(0, 8).toUpperCase()}`;
+      const cashierName = typeof saleResult === 'object' && saleResult?.cashier_name ? saleResult.cashier_name : 'Staff';
       
       setCompletedSaleData({
-        id: newSaleId,
-        date: new Date().toISOString(),
+        id: saleId,
+        saleNumber,
+        cashierName,
+        date: (typeof saleResult === 'object' && saleResult?.created_at) || new Date().toISOString(),
         customer,
         items: [...cart],
-        subtotal,
-        invoiceDiscount,
-        total,
+        subtotal: (typeof saleResult === 'object' && saleResult?.subtotal !== undefined) ? Number(saleResult.subtotal) : subtotal,
+        invoiceDiscount: (typeof saleResult === 'object' && saleResult?.invoice_discount_amount !== undefined) ? Number(saleResult.invoice_discount_amount) : invoiceDiscount,
+        total: (typeof saleResult === 'object' && saleResult?.total_amount !== undefined) ? Number(saleResult.total_amount) : total,
         paymentMethod,
         amountReceived: finalAmountToRecord,
         changeAmount,
-        remainingBalance: total - finalAmountToRecord
+        remainingBalance: (typeof saleResult === 'object' && saleResult?.remaining_balance !== undefined) ? Number(saleResult.remaining_balance) : (total - finalAmountToRecord)
       });
 
       setProducts(prevProducts => prevProducts.map(p => {
@@ -269,6 +301,7 @@ export function PosProvider({ children, navigate, activeShift, onShiftEnded }) {
     selectedCategory, setSelectedCategory,
     selectedBrand, setSelectedBrand,
     filteredProducts,
+    handleBarcodeScan,
     
     cart, addToCart, updateQty, setQty, updateItemDiscount, removeFromCart, clearCart, holdCartLocally,
     customer, setCustomer,

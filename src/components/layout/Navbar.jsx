@@ -131,7 +131,7 @@ export default function Navbar({ currentPage, navigate, cartCount = 0 }) {
           <div className="brand-icon" aria-hidden="true">
             <img 
               src="/images/transparentlogo.png" 
-              alt="Al-Jafar Store" 
+              alt="شركة الجعفر | Al-Jafar Store" 
               className="navbar-brand-img"
               style={{ height: '46px', width: 'auto', objectFit: 'contain', maxHeight: '100%', maxWidth: '145px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} 
             />
@@ -338,7 +338,7 @@ export default function Navbar({ currentPage, navigate, cartCount = 0 }) {
             <div className="mobile-drawer-header">
               <img 
                 src="/images/transparentlogo.png" 
-                alt="Al-Jafar Store" 
+                alt="شركة الجعفر | Al-Jafar Store" 
                 style={{ height: '36px', width: 'auto', objectFit: 'contain' }} 
               />
               <button 

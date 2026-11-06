@@ -32,7 +32,7 @@ export default function ContactPage({ navigate }) {
   };
 
   const handleSendWhatsapp = () => {
-    const text = `مرحباً متجر الجعفر،\nالاسم: ${formData.name || 'عميل'}\nالهاتف: ${formData.phone || ''}\nنوع الاستفسار: ${formData.subject}\nالرسالة: ${formData.message || 'أود الاستفسار عن منتجاتكم'}`;
+    const text = `مرحباً شركة الجعفر،\nالاسم: ${formData.name || 'عميل'}\nالهاتف: ${formData.phone || ''}\nنوع الاستفسار: ${formData.subject}\nالرسالة: ${formData.message || 'أود الاستفسار عن منتجاتكم'}`;
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -588,7 +588,7 @@ export default function ContactPage({ navigate }) {
               background: '#f8fafc'
             }}>
               <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 1rem 0', color: '#0f172a' }}>
-                {isArabic ? 'لماذا يختار عملاؤنا متجر الجعفر؟' : 'Why Choose Al-Jafar Store?'}
+                {isArabic ? 'لماذا يختار عملاؤنا شركة الجعفر؟' : 'Why Choose Al-Jafar Store?'}
               </h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem', color: '#475569' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>

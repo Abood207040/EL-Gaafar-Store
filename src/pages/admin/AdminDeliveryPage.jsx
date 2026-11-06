@@ -75,7 +75,7 @@ export default function AdminDeliveryPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -83,7 +83,7 @@ export default function AdminDeliveryPage() {
   // When selected governorate changes, load its areas & rates
   useEffect(() => {
     if (!selectedGovId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setAreas([]);
       setMatrixState({});
       setDirtyMatrix(false);

@@ -8,8 +8,23 @@ export default function PosCatalog() {
     search, setSearch, 
     filteredProducts, 
     loading, 
-    addToCart 
+    addToCart,
+    handleBarcodeScan
   } = usePos();
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const raw = search.trim();
+      if (!raw) return;
+
+      const matched = handleBarcodeScan(raw);
+      if (!matched && filteredProducts.length === 1 && filteredProducts[0].stock > 0) {
+        addToCart(filteredProducts[0]);
+        setSearch('');
+      }
+    }
+  };
 
   return (
     <div className="card" style={{ flex: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -17,9 +32,10 @@ export default function PosCatalog() {
         <input
           type="search"
           className="input"
-          placeholder={t('searchProducts') + " (Name, SKU, Barcode)..."}
+          placeholder={t('searchProducts') + " (Name, SKU, Barcode - Scan & Enter)..."}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
           autoFocus
           style={{ flex: 1 }}
         />

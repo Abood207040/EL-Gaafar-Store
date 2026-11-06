@@ -134,7 +134,7 @@ export default function RegisterPage({ navigate }) {
             {isArabic ? 'إنشاء حساب جديد' : 'Create an Account'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0 }}>
-            {isArabic ? 'انضم إلى عملاء مؤسسة الجعفر للأدوات الصحية في أسوان' : 'Join Al-Jafar Sanitary Store family in Aswan'}
+            {isArabic ? 'انضم إلى عملاء شركة الجعفر للأدوات الصحية في أسوان' : 'Join Al-Jafar Sanitary Store family in Aswan'}
           </p>
         </div>
 

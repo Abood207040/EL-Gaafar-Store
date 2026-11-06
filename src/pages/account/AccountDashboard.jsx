@@ -124,7 +124,7 @@ export default function AccountDashboard({ navigate }) {
 
   const whatsappMsg = encodeURIComponent(
     isArabic
-      ? `مرحباً مؤسسة الجعفر للأدوات الصحية، أنا العميل: ${displayName} (${customerProfile?.phone || user.email}) أود الاستفسار عن حسابي وطلباتي.`
+      ? `مرحباً شركة الجعفر، أنا العميل: ${displayName} (${customerProfile?.phone || user.email}) أود الاستفسار عن حسابي وطلباتي.`
       : `Hello Al-Jafar Store, I am client: ${displayName} (${customerProfile?.phone || user.email}) inquiring about my account.`
   );
 
@@ -154,7 +154,7 @@ export default function AccountDashboard({ navigate }) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: 'rgba(14, 165, 233, 0.2)', color: '#38BDF8', border: '1px solid rgba(14, 165, 233, 0.3)' }}>
-                    📍 {isArabic ? 'عميل مسجل لدى مؤسسة الجعفر' : 'Verified Client'}
+                    📍 {isArabic ? 'عميل مسجل لدى شركة الجعفر' : 'Verified Client'}
                   </span>
                 </div>
                 <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 0.25rem', letterSpacing: '-0.02em', color: '#FFFFFF' }}>

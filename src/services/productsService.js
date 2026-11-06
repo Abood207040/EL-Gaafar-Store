@@ -40,6 +40,7 @@ export async function generateUniqueBarcode() {
 }
 
 let deliveryColumnsSupported = true;
+let specsColumnSupported = true;
 
 function isColumnMissingError(err) {
   const full = `${err?.message || ''} ${err?.details || ''} ${err?.hint || ''}`.toLowerCase();
@@ -47,6 +48,7 @@ function isColumnMissingError(err) {
     full.includes('delivery_class') ||
     full.includes('is_delivery_available') ||
     full.includes('is_pickup_available') ||
+    full.includes('technical_specs') ||
     err?.code === '42703' ||
     err?.code === 'PGRST204'
   );
@@ -54,19 +56,27 @@ function isColumnMissingError(err) {
 
 async function safeProductQuery(queryExecutor) {
   try {
-    return await queryExecutor(!deliveryColumnsSupported);
+    return await queryExecutor(!deliveryColumnsSupported, !specsColumnSupported);
   } catch (err) {
     if (isColumnMissingError(err)) {
-      console.warn('[productsService] delivery columns not yet present in database, falling back gracefully.');
-      deliveryColumnsSupported = false;
-      return await queryExecutor(true);
+      const full = `${err?.message || ''} ${err?.details || ''}`.toLowerCase();
+      if (full.includes('delivery')) {
+        console.warn('[productsService] delivery columns not yet present in database, falling back gracefully.');
+        deliveryColumnsSupported = false;
+      }
+      if (full.includes('technical_specs')) {
+        console.warn('[productsService] technical_specs column not yet present in database, falling back gracefully.');
+        specsColumnSupported = false;
+      }
+      return await queryExecutor(!deliveryColumnsSupported, !specsColumnSupported);
     }
     throw err;
   }
 }
 
-export function selectProductsQuery(forceWithoutDelivery = false) {
+export function selectProductsQuery(forceWithoutDelivery = false, forceWithoutSpecs = false) {
   const includeDelivery = deliveryColumnsSupported && !forceWithoutDelivery;
+  const includeSpecs = specsColumnSupported && !forceWithoutSpecs;
   return `
     id,
     category_id,
@@ -89,6 +99,7 @@ export function selectProductsQuery(forceWithoutDelivery = false) {
     color,
     pressure_rating,
     warranty,
+    ${includeSpecs ? 'technical_specs,' : ''}
     is_active,
     is_featured,
     available_online,
@@ -134,6 +145,7 @@ export function normalizeProduct(row) {
       pressureRating: row.pressure_rating || '',
       warranty: row.warranty || '',
     },
+    technicalSpecs: Array.isArray(row.technical_specs) ? row.technical_specs : [],
     featured: Boolean(row.is_featured),
     active: row.is_active !== false,
     availableOnline: row.available_online !== false,
@@ -196,6 +208,10 @@ async function toDbPayload(payload) {
     available_online: payload.availableOnline !== false,
     available_offline: payload.availableOffline !== false,
   };
+
+  if (specsColumnSupported && Array.isArray(payload.technicalSpecs)) {
+    base.technical_specs = payload.technicalSpecs;
+  }
 
   if (deliveryColumnsSupported) {
     base.delivery_class = payload.isDeliveryAvailable ? (payload.deliveryClass || 'medium') : null;
@@ -335,11 +351,25 @@ export async function createAdminProduct(payload) {
     }
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from(PRODUCTS_TABLE)
     .insert(insertPayload)
     .select(selectProductsQuery())
     .single();
+
+  if (error && isColumnMissingError(error)) {
+    if (error.message?.includes('technical_specs')) {
+      specsColumnSupported = false;
+      delete insertPayload.technical_specs;
+      const retry = await supabase
+        .from(PRODUCTS_TABLE)
+        .insert(insertPayload)
+        .select(selectProductsQuery())
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+  }
 
   if (error) throw error;
   return normalizeProduct(data);
@@ -366,12 +396,27 @@ export async function updateAdminProduct(id, payload) {
   delete updatePayload.stock;
   delete updatePayload.stock_status;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from(PRODUCTS_TABLE)
     .update(updatePayload)
     .eq('id', id)
     .select(selectProductsQuery())
     .single();
+
+  if (error && isColumnMissingError(error)) {
+    if (error.message?.includes('technical_specs')) {
+      specsColumnSupported = false;
+      delete updatePayload.technical_specs;
+      const retry = await supabase
+        .from(PRODUCTS_TABLE)
+        .update(updatePayload)
+        .eq('id', id)
+        .select(selectProductsQuery())
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+  }
 
   if (error) throw error;
   return normalizeProduct(data);

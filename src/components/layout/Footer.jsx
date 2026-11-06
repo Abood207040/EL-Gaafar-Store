@@ -61,7 +61,7 @@ export default function Footer({ navigate }) {
               />
             </div>
             <p className="footer-brand-title">
-              {isArabic ? 'مؤسسة الجعفر للأدوات الصحية والسباكة' : 'Al-Jafar Sanitary Ware & Plumbing Tools'}
+              {isArabic ? 'شركة الجعفر للأدوات الصحية والسباكة' : 'Al-Jafar Sanitary Ware & Plumbing Tools'}
             </p>
             <p className="footer-desc">
               {isArabic 
@@ -174,7 +174,7 @@ export default function Footer({ navigate }) {
 
         {/* Bottom Bar */}
         <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} {isArabic ? 'متجر الجعفر للأدوات الصحية' : 'Al-Jafar Sanitary Ware Store'}. {t('allRightsReserved')}</p>
+          <p>© {new Date().getFullYear()} {isArabic ? 'شركة الجعفر' : 'Al-Jafar Sanitary Ware Store'}. {t('allRightsReserved')}</p>
           <div className="footer-badges">
             <span className="footer-pill-badge">{isArabic ? 'أسوان، مصر' : 'Aswan, Egypt'}</span>
             <span className="footer-pill-badge accent">{isArabic ? 'الدفع نقدياً عند الاستلام' : 'Cash on Delivery'}</span>

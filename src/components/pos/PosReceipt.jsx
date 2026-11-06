@@ -9,6 +9,8 @@ export default function PosReceipt() {
 
   const {
     id,
+    saleNumber,
+    cashierName,
     date,
     customer,
     items,
@@ -43,14 +45,15 @@ export default function PosReceipt() {
         margin: '0 auto'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '1px dashed #ccc', paddingBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '18px' }}>EL-GAAFAR STORE</h2>
-          <h2 style={{ margin: '0.25rem 0 0 0', fontSize: '18px' }}>متجر الجعفر</h2>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>شركة الجعفر</h2>
+          <h2 style={{ margin: '0.25rem 0 0 0', fontSize: '13px', letterSpacing: '1px' }}>AL-JAFAR STORE</h2>
+          <p style={{ margin: '0.25rem 0 0 0', fontSize: '11px', color: '#555' }}>للأدوات الصحية ومستلزمات السباكة - أسوان</p>
         </div>
 
         <div style={{ marginBottom: '1rem', borderBottom: '1px dashed #ccc', paddingBottom: '1rem' }}>
-          <div>Receipt #: {id.substring(0,8).toUpperCase()}...</div>
+          <div><strong>Receipt #: {saleNumber || (id ? id.substring(0, 8).toUpperCase() : '')}</strong></div>
           <div>Date: {new Date(date).toLocaleString()}</div>
-          <div>Cashier: Admin</div>
+          <div>Cashier: {cashierName || 'Staff'}</div>
           <div style={{ marginTop: '0.5rem' }}>
             Customer:<br/>
             <strong>{customer ? (customer.full_name || customer.name) : 'Walk-in Customer'}</strong>
@@ -67,13 +70,25 @@ export default function PosReceipt() {
           </thead>
           <tbody>
             {items.map((item, idx) => {
-              // Calculate line total purely for the receipt display (ignoring item discount complexity here for brevity, relying on subtotal)
-              const lineSub = (item.product.price * item.qty).toFixed(2);
+              const lineGross = item.product.price * item.qty;
+              const dVal = Number(item.discountValue) || 0;
+              const lineDiscount = item.discountType === 'percentage'
+                ? lineGross * (Math.min(dVal, 100) / 100)
+                : Math.min(dVal, lineGross);
+              const lineNet = Math.max(0, lineGross - lineDiscount);
+
               return (
-                <tr key={idx}>
-                  <td style={{ padding: '0.25rem 0' }}>{productName(item.product)}</td>
+                <tr key={idx} style={{ verticalAlign: 'top' }}>
+                  <td style={{ padding: '0.25rem 0' }}>
+                    <div>{productName(item.product)}</div>
+                    {lineDiscount > 0 && (
+                      <div style={{ fontSize: '10px', color: '#666' }}>
+                        (-{lineDiscount.toFixed(2)} خصم)
+                      </div>
+                    )}
+                  </td>
                   <td style={{ textAlign: 'center', padding: '0.25rem 0' }}>{item.qty}</td>
-                  <td style={{ textAlign: isRTL ? 'left' : 'right', padding: '0.25rem 0' }}>{lineSub}</td>
+                  <td style={{ textAlign: isRTL ? 'left' : 'right', padding: '0.25rem 0' }}>{lineNet.toFixed(2)}</td>
                 </tr>
               );
             })}

@@ -20,7 +20,7 @@ export default function OrderSuccessPage({ navigate, order }) {
 
   const whatsappMsg = encodeURIComponent(
     isArabic
-      ? `مرحباً مؤسسة الجعفر للأدوات الصحية، أود الاستفسار عن طلبي رقم: #${orderNum}`
+      ? `مرحباً شركة الجعفر، أود الاستفسار عن طلبي رقم: #${orderNum}`
       : `Hello Al-Jafar Store, I would like to inquire about my order #${orderNum}`
   );
 

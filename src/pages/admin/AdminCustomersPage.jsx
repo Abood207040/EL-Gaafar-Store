@@ -1,16 +1,18 @@
 // src/pages/admin/AdminCustomersPage.jsx
 import { useEffect, useMemo, useState } from 'react';
 import { useLocalization } from '../../i18n/Localization.jsx';
-import { getAdminCustomers, getCustomerStats } from '../../services/adminCustomersService.js';
+import { getAdminCustomers, computeCustomerStats } from '../../services/adminCustomersService.js';
+import CustomerDetailsModal from '../../components/admin/CustomerDetailsModal.jsx';
 
 export default function AdminCustomersPage() {
-  const { t, customerStatus } = useLocalization();
+  const { t, customerStatus, isArabic } = useLocalization();
   const [customers, setCustomers] = useState([]);
   const [stats, setStats] = useState({ total: 0, newThisMonth: 0, active: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const ITEMS_PER_PAGE = 8;
 
   useEffect(() => {
@@ -19,10 +21,10 @@ export default function AdminCustomersPage() {
       setLoading(true);
       setError('');
       try {
-        const [rows, statsData] = await Promise.all([getAdminCustomers(), getCustomerStats()]);
+        const rows = await getAdminCustomers();
         if (!ignore) {
           setCustomers(rows);
-          setStats(statsData);
+          setStats(computeCustomerStats(rows));
         }
       } catch (fetchError) {
         if (!ignore) {
@@ -40,19 +42,20 @@ export default function AdminCustomersPage() {
     };
   }, [t]);
 
-  const filtered = useMemo(
-    () =>
-      customers.filter((customer) => {
-        const q = search.toLowerCase();
-        return (
-          !q ||
-          customer.name.toLowerCase().includes(q) ||
-          customer.phone.toLowerCase().includes(q) ||
-          customer.email.toLowerCase().includes(q)
-        );
-      }),
-    [customers, search]
-  );
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return customers;
+    return customers.filter((customer) => {
+      return (
+        customer.name.toLowerCase().includes(q) ||
+        customer.phone.toLowerCase().includes(q) ||
+        (customer.phoneNormalized && customer.phoneNormalized.includes(q)) ||
+        customer.email.toLowerCase().includes(q) ||
+        (customer.area && customer.area.toLowerCase().includes(q)) ||
+        (customer.city && customer.city.toLowerCase().includes(q))
+      );
+    });
+  }, [customers, search]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -70,19 +73,19 @@ export default function AdminCustomersPage() {
         </div>
         <div className="card stat-mini">
           <span className="stat-mini-label">{t('activeCustomers')}</span>
-          <span className="stat-mini-value" style={{ color: 'var(--accent)' }}>{stats.active}</span>
+          <span className="stat-mini-value" style={{ color: 'var(--primary)' }}>{stats.active}</span>
         </div>
       </div>
 
-      <div className="admin-page-toolbar" style={{ marginTop: '1.5rem' }}>
-        <div className="input-group" style={{ maxWidth: 320 }}>
-          <span className="input-icon" aria-hidden="true">
+      <div className="admin-controls" style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="search-box" style={{ maxWidth: '400px', flex: 1 }}>
+          <span className="search-icon" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </span>
           <input
             className="input"
             type="search"
-            placeholder={t('searchCustomers')}
+            placeholder={isArabic ? 'بحث بالاسم، رقم الهاتف، أو البريد الإلكتروني...' : 'Search by name, phone, or email...'}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -107,26 +110,31 @@ export default function AdminCustomersPage() {
                 <th>{t('email')}</th>
                 <th>{t('location')}</th>
                 <th>{t('totalCustomerOrders')}</th>
-                <th>{t('lastOrder')}</th>
+                <th>{isArabic ? 'إجمالي المديونية' : 'Debt'}</th>
                 <th>{t('status')}</th>
+                <th>{t('actions') || 'Actions'}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('loadingProducts')}
                   </td>
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--muted)', padding: '2.5rem' }}>
                     {t('noCustomersFound')}
                   </td>
                 </tr>
               ) : (
                 paginated.map((customer) => (
-                  <tr key={customer.id}>
+                  <tr 
+                    key={customer.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedCustomerId(customer.id)}
+                  >
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div className="customer-avatar" aria-hidden="true">
@@ -134,7 +142,7 @@ export default function AdminCustomersPage() {
                         </div>
                         <div>
                           <p style={{ fontWeight: 600 }}>{customer.name || t('noValue')}</p>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{customer.id}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{customer.id.substring(0, 8)}...</p>
                         </div>
                       </div>
                     </td>
@@ -152,8 +160,14 @@ export default function AdminCustomersPage() {
                         </p>
                       )}
                     </td>
-                    <td style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
-                      {customer.lastOrderDate || t('noValue')}
+                    <td>
+                      {customer.totalDebt > 0 ? (
+                        <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>
+                          EGP {customer.totalDebt.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--success)' }}>0.00</span>
+                      )}
                     </td>
                     <td>
                       <span
@@ -168,43 +182,53 @@ export default function AdminCustomersPage() {
                         {customerStatus(customer.status)}
                       </span>
                     </td>
+                    <td>
+                      <button 
+                        type="button" 
+                        className="btn btn-outline btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCustomerId(customer.id);
+                        }}
+                      >
+                        {isArabic ? 'عرض التفاصيل' : 'Details'}
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 ? (
+          <div className="pagination" style={{ padding: '1rem', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+            <button
+              className="btn btn-sm btn-outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              {t('prevPage')}
+            </button>
+            <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: 'var(--muted)' }}>
+              {t('pageOf', page, totalPages)}
+            </span>
+            <button
+              className="btn btn-sm btn-outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              {t('nextPage')}
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      {totalPages > 1 && (
-        <nav className="pagination" aria-label={t('customersPagination')}>
-          <button
-            className="page-btn"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            aria-label={t('previousPage')}
-          >
-            {'<'}
-          </button>
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map((p) => (
-            <button
-              key={p}
-              className={`page-btn ${page === p ? 'active' : ''}`}
-              onClick={() => setPage(p)}
-              aria-label={t('pageNumber', p)}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            className="page-btn"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            aria-label={t('nextPage')}
-          >
-            {'>'}
-          </button>
-        </nav>
+      {selectedCustomerId && (
+        <CustomerDetailsModal
+          customerId={selectedCustomerId}
+          onClose={() => setSelectedCustomerId(null)}
+        />
       )}
     </div>
   );

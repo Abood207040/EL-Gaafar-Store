@@ -5,9 +5,22 @@ import { baseOrderSelect } from './orderUtils.js';
 
 const ORDERS_TABLE = 'orders';
 
+export function toCanonicalOrderStatus(status) {
+  if (!status) return ORDER_STATUSES.PENDING;
+  const s = String(status).toLowerCase().trim();
+  if (s === 'pending') return ORDER_STATUSES.PENDING;
+  if (s === 'confirmed') return ORDER_STATUSES.CONFIRMED;
+  if (s === 'shipped') return ORDER_STATUSES.SHIPPED;
+  if (s === 'ready_pickup' || s === 'ready for pickup') return ORDER_STATUSES.READY_PICKUP;
+  if (s === 'delivered') return ORDER_STATUSES.DELIVERED;
+  if (s === 'cancelled' || s === 'canceled') return ORDER_STATUSES.CANCELLED;
+  return status;
+}
+
 function mapOrderStatusTimeline(status, fulfillment, createdAt) {
   const stamp = createdAt ? new Date(createdAt).toISOString().slice(0, 10) : '';
-  if (status === ORDER_STATUSES.CANCELLED) {
+  const canonical = toCanonicalOrderStatus(status);
+  if (canonical === ORDER_STATUSES.CANCELLED) {
     return [
       { step: 'Placed', date: stamp, done: true },
       { step: 'Cancelled', date: stamp, done: true },
@@ -34,7 +47,7 @@ function mapOrderStatusTimeline(status, fulfillment, createdAt) {
     [ORDER_STATUSES.SHIPPED]: 2,
     [ORDER_STATUSES.READY_PICKUP]: 2,
     [ORDER_STATUSES.DELIVERED]: 3,
-  }[status] ?? 0;
+  }[canonical] ?? 0;
 
   return steps.map((step, index) => ({
     step,
@@ -76,7 +89,7 @@ export function normalizeOrder(row) {
       email: row.customer_email || row.customers?.email || '',
     },
     fulfillment,
-    status: row.status || ORDER_STATUSES.PENDING,
+    status: toCanonicalOrderStatus(row.status),
     address: {
       street: row.street_address || '',
       city: row.city || '',

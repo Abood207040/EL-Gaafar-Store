@@ -1,6 +1,7 @@
 export const STORE_INFO = {
   name: 'Al-Jafar Store',
-  nameAr: 'مؤسسة الجعفر للأدوات الصحية والسباكة',
+  nameAr: 'شركة الجعفر',
+  fullNameAr: 'شركة الجعفر للأدوات الصحية والسباكة',
   address: 'Aswan, Egypt',
   addressAr: 'أسوان، مصر',
   phone: '+20 112 133 4488',

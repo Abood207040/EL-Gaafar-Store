@@ -95,6 +95,36 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
     return [current.image];
   }, [current]);
 
+  const specRows = useMemo(() => {
+    if (!current) return [];
+    if (Array.isArray(current.technicalSpecs) && current.technicalSpecs.length > 0) {
+      return current.technicalSpecs
+        .filter(
+          (s) =>
+            (s.name_en || s.nameEn || s.name_ar || s.nameAr) &&
+            (s.value_en || s.valueEn || s.value_ar || s.valueAr)
+        )
+        .map((s) => {
+          const label = isArabic
+            ? s.name_ar || s.nameAr || s.name_en || s.nameEn
+            : s.name_en || s.nameEn || s.name_ar || s.nameAr;
+          const val = isArabic
+            ? s.value_ar || s.valueAr || s.value_en || s.valueEn
+            : s.value_en || s.valueEn || s.value_ar || s.valueAr;
+          return [label, val, true];
+        });
+    }
+
+    return [
+      ['Size', current.specs?.size],
+      ['Material', current.specs?.material],
+      ['Usage', current.specs?.usage],
+      ['Color', current.specs?.color],
+      ['Pressure Rating', current.specs?.pressureRating],
+      ['Warranty', current.specs?.warranty],
+    ].filter(([, val]) => val);
+  }, [current, isArabic]);
+
   if (loading) {
     return (
       <div className="container" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
@@ -120,15 +150,6 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
   const outOfStock = current.stockStatus === STOCK_STATUSES.OUT_OF_STOCK;
   const unavailableOnline = current.availableOnline === false;
   const cannotPurchase = outOfStock || unavailableOnline;
-  
-  const specRows = [
-    ['Size', current.specs?.size],
-    ['Material', current.specs?.material],
-    ['Usage', current.specs?.usage],
-    ['Color', current.specs?.color],
-    ['Pressure Rating', current.specs?.pressureRating],
-    ['Warranty', current.specs?.warranty],
-  ].filter(([, val]) => val);
 
   const handleAddToCart = () => {
     onAddToCart(current, qty);
@@ -137,7 +158,7 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
   };
 
   const whatsappMessage = isArabic
-    ? `مرحباً متجر الجعفر، أود الاستفسار عن المنتج: ${current.nameAr || current.nameEn} (كود: ${current.sku}) بسعر ${current.price} ج.م`
+    ? `مرحباً شركة الجعفر، أود الاستفسار عن المنتج: ${current.nameAr || current.nameEn} (كود: ${current.sku}) بسعر ${current.price} ج.م`
     : `Hello Al-Jafar Store, I'd like to inquire about: ${current.nameEn} (SKU: ${current.sku}) priced at EGP ${current.price}`;
 
   return (
@@ -332,12 +353,22 @@ export default function ProductDetailsPage({ product, navigate, onAddToCart }) {
                 <div className="table-wrapper" style={{ border: 'none' }}>
                   <table className="table specs-table">
                     <tbody>
-                      {specRows.map(([key, val]) => (
-                        <tr key={key}>
-                          <th style={{ fontWeight: 600, width: '40%', background: '#F8FAFC' }}>{translateSpecLabel(key)}</th>
-                          <td>{translateSpecValue(val)}</td>
+                      {specRows.length === 0 ? (
+                        <tr>
+                          <td colSpan="2" style={{ textAlign: 'center', padding: '1rem', color: 'var(--muted)' }}>
+                            {isArabic ? 'لا توجد مواصفات فنية إضافية لهذا المنتج' : 'No additional specifications available for this product'}
+                          </td>
                         </tr>
-                      ))}
+                      ) : (
+                        specRows.map(([key, val, isPreformatted], idx) => (
+                          <tr key={idx}>
+                            <th style={{ fontWeight: 600, width: '40%', background: '#F8FAFC' }}>
+                              {isPreformatted ? key : translateSpecLabel(key)}
+                            </th>
+                            <td>{isPreformatted ? val : translateSpecValue(val)}</td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

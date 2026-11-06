@@ -9,7 +9,7 @@ const STATUS_FILTERS = ['All', ...Object.values(ORDER_STATUSES)];
 const FULFILLMENT_FILTERS = ['All', ...Object.values(FULFILLMENT)];
 
 export default function AdminOrdersPage({ navigate }) {
-  const { t, translateOrderStatus, translateFulfillment } = useLocalization();
+  const { t, isArabic, translateOrderStatus, translateFulfillment } = useLocalization();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,6 +17,8 @@ export default function AdminOrdersPage({ navigate }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [fulfillmentFilter, setFulfillmentFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [sortBy, setSortBy] = useState('date-desc');
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
@@ -35,27 +37,71 @@ export default function AdminOrdersPage({ navigate }) {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      orders.filter((order) => {
-        const matchStatus = statusFilter === 'All' || order.status === statusFilter;
-        const matchFulfillment =
-          fulfillmentFilter === 'All' || order.fulfillment === fulfillmentFilter;
-        const q = search.toLowerCase();
-        const matchSearch =
-          !q ||
-          String(order.orderNumber || order.id).toLowerCase().includes(q) ||
-          String(order.customer?.name || '').toLowerCase().includes(q) ||
-          String(order.customer?.phone || '').toLowerCase().includes(q);
-        return matchStatus && matchFulfillment && matchSearch;
-      }),
-    [fulfillmentFilter, orders, search, statusFilter]
-  );
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const result = orders.filter((order) => {
+      const matchStatus = statusFilter === 'All' || order.status === statusFilter;
+      const matchFulfillment =
+        fulfillmentFilter === 'All' || order.fulfillment === fulfillmentFilter;
+      
+      const orderNum = String(order.orderNumber || '').toLowerCase();
+      const orderId = String(order.id || '').toLowerCase();
+      const custId = String(order.customer?.id || '').toLowerCase();
+      const custName = String(order.customer?.name || '').toLowerCase();
+      const custPhone = String(order.customer?.phone || '').toLowerCase();
+      const custEmail = String(order.customer?.email || '').toLowerCase();
+      const dateStr = String(order.date || '').toLowerCase();
+      const isoDate = (order.createdAt || order.date || '').slice(0, 10);
+
+      const matchSearch =
+        !q ||
+        orderNum.includes(q) ||
+        orderId.includes(q) ||
+        custId.includes(q) ||
+        custName.includes(q) ||
+        custPhone.includes(q) ||
+        custEmail.includes(q) ||
+        dateStr.includes(q) ||
+        isoDate.includes(q);
+
+      const matchDate = !dateFilter || isoDate === dateFilter;
+
+      return matchStatus && matchFulfillment && matchSearch && matchDate;
+    });
+
+    result.sort((a, b) => {
+      if (sortBy === 'date-desc') {
+        return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
+      }
+      if (sortBy === 'date-asc') {
+        return new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date);
+      }
+      if (sortBy === 'total-desc') {
+        return Number(b.total || 0) - Number(a.total || 0);
+      }
+      if (sortBy === 'total-asc') {
+        return Number(a.total || 0) - Number(b.total || 0);
+      }
+      if (sortBy === 'name-asc') {
+        const nameA = a.customer?.name || (isArabic ? 'ي' : 'z');
+        const nameB = b.customer?.name || (isArabic ? 'ي' : 'z');
+        return nameA.localeCompare(nameB);
+      }
+      if (sortBy === 'name-desc') {
+        const nameA = a.customer?.name || (isArabic ? 'أ' : 'a');
+        const nameB = b.customer?.name || (isArabic ? 'أ' : 'a');
+        return nameB.localeCompare(nameA);
+      }
+      return 0;
+    });
+
+    return result;
+  }, [orders, statusFilter, fulfillmentFilter, search, dateFilter, sortBy, isArabic]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -76,15 +122,15 @@ export default function AdminOrdersPage({ navigate }) {
 
   return (
     <div className="admin-page animate-fadeIn">
-      <div className="admin-page-toolbar">
-        <div className="input-group" style={{ maxWidth: 320 }}>
+      <div className="admin-page-toolbar" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="input-group" style={{ minWidth: 260, flex: 1 }}>
           <span className="input-icon" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </span>
           <input
             className="input"
             type="search"
-            placeholder={t('searchOrdersCustomers')}
+            placeholder={isArabic ? 'بحث برقم الطلب، اسم العميل، المعرف، الهاتف، أو التاريخ...' : 'Search by order #, customer name, ID, phone, or date...'}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
@@ -93,10 +139,59 @@ export default function AdminOrdersPage({ navigate }) {
             aria-label={t('searchOrders')}
           />
         </div>
+
+        {/* Date Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <input
+            type="date"
+            className="input"
+            style={{ width: 'auto', minWidth: 150 }}
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setPage(1);
+            }}
+            title={isArabic ? 'تصفية حسب التاريخ' : 'Filter by date'}
+          />
+          {dateFilter && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              style={{ padding: '0.35rem 0.6rem' }}
+              onClick={() => {
+                setDateFilter('');
+                setPage(1);
+              }}
+              title={isArabic ? 'إلغاء تصفية التاريخ' : 'Clear date'}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Sort Dropdown */}
+        <select
+          className="select"
+          style={{ width: 'auto', minWidth: 170 }}
+          value={sortBy}
+          onChange={(e) => {
+            setSortBy(e.target.value);
+            setPage(1);
+          }}
+          aria-label={isArabic ? 'الترتيب' : 'Sort by'}
+        >
+          <option value="date-desc">{isArabic ? 'الأحدث أولاً' : 'Date: Newest First'}</option>
+          <option value="date-asc">{isArabic ? 'الأقدم أولاً' : 'Date: Oldest First'}</option>
+          <option value="total-desc">{isArabic ? 'الأعلى قيمة' : 'Total: High to Low'}</option>
+          <option value="total-asc">{isArabic ? 'الأقل قيمة' : 'Total: Low to High'}</option>
+          <option value="name-asc">{isArabic ? 'اسم العميل (أ - ي)' : 'Customer: A to Z'}</option>
+          <option value="name-desc">{isArabic ? 'اسم العميل (ي - أ)' : 'Customer: Z to A'}</option>
+        </select>
+
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <select
             className="select"
-            style={{ width: 'auto', minWidth: 160 }}
+            style={{ width: 'auto', minWidth: 150 }}
             value={statusFilter}
             onChange={(event) => {
               setStatusFilter(event.target.value);
@@ -112,7 +207,7 @@ export default function AdminOrdersPage({ navigate }) {
           </select>
           <select
             className="select"
-            style={{ width: 'auto', minWidth: 180 }}
+            style={{ width: 'auto', minWidth: 160 }}
             value={fulfillmentFilter}
             onChange={(event) => {
               setFulfillmentFilter(event.target.value);
@@ -165,7 +260,18 @@ export default function AdminOrdersPage({ navigate }) {
                 paginated.map((order) => (
                   <tr key={order.id}>
                     <td><span className="sku-text">#{order.orderNumber || order.id}</span></td>
-                    <td><span style={{ fontWeight: 500 }}>{order.customer?.name}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600 }}>
+                          {order.customer?.name || (isArabic ? 'عميل غير مسجل' : 'Guest / Unregistered')}
+                        </span>
+                        {order.customer?.id && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontFamily: 'monospace' }}>
+                            ID: #{String(order.customer.id).slice(0, 8)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>{order.customer?.phone}</td>
                     <td>
                       <span className="badge badge-muted">

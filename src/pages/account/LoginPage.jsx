@@ -78,7 +78,7 @@ export default function LoginPage({ navigate }) {
             {isArabic ? 'تسجيل الدخول' : 'Sign In'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
-            {isArabic ? 'أهلاً بك في مؤسسة الجعفر للأدوات الصحية بأسوان' : 'Welcome to Al-Jafar Sanitary Store'}
+            {isArabic ? 'أهلاً بك في شركة الجعفر للأدوات الصحية بأسوان' : 'Welcome to Al-Jafar Sanitary Store'}
           </p>
         </div>
 
